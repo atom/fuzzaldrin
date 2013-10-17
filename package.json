@@ -1,0 +1,38 @@
+{
+  "name": "fuzzaldrin",
+  "version": "0.0.0",
+  "description": "Fuzzy filtering and string scoring",
+  "licenses": [
+    {
+      "type": "MIT",
+      "url": "http://github.com/atom/fuzzaldrin/raw/master/LICENSE.md"
+    }
+  ],
+  "main": "./lib/fuzzaldrin.js",
+  "scripts": {
+    "prepublish": "grunt prepublish",
+    "test": "grunt test"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/atom/fuzzaldrin.git"
+  },
+  "bugs": {
+    "url": "https://github.com/atom/fuzzaldrin/issues"
+  },
+  "homepage": "http://atom.github.io/fuzzaldrin",
+  "keywords": [
+    "fuzzy",
+    "filter",
+    "stringscore"
+  ],
+  "devDependencies": {
+    "jasmine-focused": "~0.15.0",
+    "grunt-contrib-coffee": "~0.7.0",
+    "grunt-cli": "~0.1.8",
+    "grunt": "~0.4.1",
+    "grunt-shell": "~0.2.2",
+    "grunt-coffeelint": "0.0.6",
+    "tantamount": "~0.6.0"
+  }
+}
