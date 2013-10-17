@@ -1,4 +1,4 @@
-# fuzzaldrin
+# fuzzaldrin [![Build Status](https://travis-ci.org/atom/fuzzaldrin.png?branch=master)](https://travis-ci.org/atom/fuzzaldrin)
 
 Fuzzy filtering and string scoring.
 
