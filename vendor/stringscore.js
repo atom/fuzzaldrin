@@ -28,7 +28,6 @@ module.exports = function(string, abbreviation) {
       string_length = string.length,
       start_of_string_bonus,
       abbreviation_score,
-      fuzzies=1,
       final_score;
 
   // Walk through abbreviation and add up scores.
@@ -100,8 +99,6 @@ module.exports = function(string, abbreviation) {
   // Reduce penalty for longer strings.
   //final_score = (word_score + abbreviation_score) / 2;
   final_score = ((abbreviation_score * (abbreviation_length / string_length)) + abbreviation_score) / 2;
-
-  final_score = final_score / fuzzies;
 
   if (start_of_string_bonus && (final_score + 0.15 < 1)) {
     final_score += 0.15;
