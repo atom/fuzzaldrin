@@ -22,8 +22,6 @@
 module.exports = function(string, abbreviation, fuzziness) {
   // If the string is equal to the abbreviation, perfect match.
   if (string == abbreviation) {return 1;}
-  // If it's not a perfect match and is empty return 0
-  if (abbreviation == "") {return 0;}
 
   var total_character_score = 0,
       abbreviation_length = abbreviation.length,

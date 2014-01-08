@@ -1,6 +1,6 @@
-score = require '../vendor/stringscore'
+{score} = require '../src/fuzzaldrin'
 
-describe "stringscore", ->
+describe "score(string, abbreviation)", ->
   it "returns a score", ->
     expect(score('Hello World', 'he')).toBeLessThan(score('Hello World', 'Hello'))
     expect(score('Hello World', 'Hello World')).toBe 1

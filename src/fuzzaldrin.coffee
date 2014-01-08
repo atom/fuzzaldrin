@@ -1,3 +1,8 @@
+stringScore = require '../vendor/stringscore'
+
 module.exports =
-  score: require '../vendor/stringscore'
   filter: require './filter'
+
+  score: (string, abbreviation, fuzziness) ->
+    return 0 if abbreviation is ''
+    stringScore(string, abbreviation, fuzziness)
