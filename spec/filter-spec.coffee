@@ -23,3 +23,6 @@ describe "filtering", ->
 
       candidates = ['/bar/foo', '/foo/bar', '/bar']
       expect(filter(candidates, 'bar', maxResults: 1)).toEqual ['/bar']
+
+      candidates = ['/bar/foo', 'bar/////////']
+      expect(filter(candidates, 'bar', maxResults: 1)).toEqual ['bar/////////']

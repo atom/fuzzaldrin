@@ -12,7 +12,7 @@ basenameScore = (string, query, score) ->
       base ?= string.substring(index + 1, lastCharacter + 1)
     else if index is 0
       if lastCharacter < string.length - 1
-        base ?= string.substring(0, lastCharacter)
+        base ?= string.substring(0, lastCharacter + 1)
       else
         base ?= string
     index--
