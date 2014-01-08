@@ -1,3 +1,4 @@
+Copyright (c) 2009-2011 Joshaven Potter <yourtech@gmail.com>
 Copyright (c) 2013 GitHub Inc.
 
 Permission is hereby granted, free of charge, to any person obtaining
