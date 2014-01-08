@@ -34,7 +34,6 @@
     "grunt": "~0.4.1",
     "grunt-shell": "~0.2.2",
     "grunt-coffeelint": "0.0.6",
-    "tantamount": "~0.6.0",
     "coffee-script": "~1.6.3"
   }
 }
