@@ -14,3 +14,12 @@ describe "filtering", ->
     it "weighs basename matches higher", ->
       candidates = ['/bar/foo', '/foo/bar']
       expect(filter(candidates, 'bar', maxResults: 1)).toEqual ['/foo/bar']
+
+      candidates = ['/bar/foo', '/foo/bar/////////']
+      expect(filter(candidates, 'bar', maxResults: 1)).toEqual ['/foo/bar/////////']
+
+      candidates = ['/bar/foo', '/foo/bar', 'bar']
+      expect(filter(candidates, 'bar', maxResults: 1)).toEqual ['bar']
+
+      candidates = ['/bar/foo', '/foo/bar', '/bar']
+      expect(filter(candidates, 'bar', maxResults: 1)).toEqual ['/bar']

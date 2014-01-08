@@ -1,5 +1,32 @@
 stringScore = require '../vendor/stringscore'
-path = require 'path'
+
+basenameScore = (string, query, score) ->
+  index = string.length - 1
+  index-- while string[index] is '/' # Skip trailing slashes
+  slashCount = 0
+  lastCharacter = index
+  base = null
+  while index >= 0
+    if string[index] is '/'
+      slashCount++
+      base ?= string.substring(index + 1, lastCharacter + 1)
+    else if index is 0
+      if lastCharacter < string.length - 1
+        base ?= string.substring(0, lastCharacter)
+      else
+        base ?= string
+    index--
+
+  # Basename matches count for more.
+  if base is string
+    score *= 2
+  else
+    score += stringScore(base, query)
+
+  # Shallow files are scored higher
+  depth = Math.max(1, 10 - slashCount)
+  score *= depth * 0.01
+  score
 
 module.exports = (candidates, query, options={}) ->
   if query
@@ -8,14 +35,7 @@ module.exports = (candidates, query, options={}) ->
     for candidate in candidates
       string = if options.key? then candidate[options.key] else candidate
       score = stringScore(string, query)
-
-      if queryHasNoSlashes
-        # Basename matches count for more.
-        score += stringScore(path.basename(string), query)
-
-        # Shallow files are scored higher
-        depth = Math.max(1, 10 - string.split('/').length - 1)
-        score *= depth * 0.01
+      score = basenameScore(string, query, score) if queryHasNoSlashes
 
       scoredCandidates.push({candidate, score}) if score > 0
 
