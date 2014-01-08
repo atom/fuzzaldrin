@@ -9,3 +9,8 @@ describe "filtering", ->
     it "limits the results to the result size", ->
       candidates = ['Gruntfile','filter', 'bile']
       expect(filter(candidates, 'file', maxResults: 1)).toEqual ['filter']
+
+  describe "when the entries contains slashes", ->
+    it "weighs basename matches higher", ->
+      candidates = ['/bar/foo', '/foo/bar']
+      expect(filter(candidates, 'bar', maxResults: 1)).toEqual ['/foo/bar']
