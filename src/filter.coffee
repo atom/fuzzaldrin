@@ -7,7 +7,7 @@ module.exports = (candidates, query, options={}) ->
       string = if options.key? then candidate[options.key] else candidate
       score = stringScore(string, query)
 
-      unless /\//.test(query)
+      if query.indexOf('/') is -1
         # Basename matches count for more.
         score += stringScore(path.basename(string), query)
 
