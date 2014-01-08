@@ -29,12 +29,12 @@ basenameScore = (string, query, score) ->
   score *= depth * 0.01
   score
 
-module.exports = (candidates, query, options={}) ->
+module.exports = (candidates, query, {key, maxResults}={}) ->
   if query
     queryHasNoSlashes = query.indexOf('/') is -1
     scoredCandidates = []
     for candidate in candidates
-      string = if options.key? then candidate[options.key] else candidate
+      string = if key? then candidate[key] else candidate
       score = stringScore(string, query)
       score = basenameScore(string, query, score) if queryHasNoSlashes
       scoredCandidates.push({candidate, score}) if score > 0
@@ -44,5 +44,5 @@ module.exports = (candidates, query, options={}) ->
 
     candidates = (scoredCandidate.candidate for scoredCandidate in scoredCandidates)
 
-  candidates = candidates[0...options.maxResults] if options.maxResults?
+  candidates = candidates[0...maxResults] if maxResults?
   candidates
