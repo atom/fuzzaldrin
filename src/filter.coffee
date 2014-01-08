@@ -24,7 +24,8 @@ basenameScore = (string, query, score) ->
     score += stringScore(base, query)
 
   # Shallow files are scored higher
-  depth = Math.max(1, 10 - slashCount)
+  segmentCount = slashCount + 1
+  depth = Math.max(1, 10 - segmentCount)
   score *= depth * 0.01
   score
 
