@@ -4,5 +4,5 @@ module.exports =
   filter: require './filter'
 
   score: (string, abbreviation, fuzziness) ->
-    return 0 if abbreviation is ''
+    return 0 unless abbreviation
     stringScore(string, abbreviation, fuzziness)
