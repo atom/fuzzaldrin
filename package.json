@@ -11,7 +11,8 @@
   "main": "./lib/fuzzaldrin.js",
   "scripts": {
     "prepublish": "grunt prepublish",
-    "test": "grunt test"
+    "test": "grunt test",
+    "benchmark": "node_modules/.bin/coffee --nodejs --harmony_collections benchmark/benchmark.coffee"
   },
   "repository": {
     "type": "git",
@@ -33,6 +34,7 @@
     "grunt": "~0.4.1",
     "grunt-shell": "~0.2.2",
     "grunt-coffeelint": "0.0.6",
-    "tantamount": "~0.6.0"
+    "tantamount": "~0.6.0",
+    "coffee-script": "~1.6.3"
   }
 }
