@@ -19,10 +19,9 @@ module.exports = (candidates, query, options={}) ->
 
       scoredCandidates.push({candidate, score}) if score > 0
 
-    scoredCandidates.sort (a, b) ->
-      if a.score > b.score then -1
-      else if a.score < b.score then 1
-      else 0
+    # Sort scores in descending order
+    scoredCandidates.sort (a, b) -> b.score - a.score
+
     candidates = (scoredCandidate.candidate for scoredCandidate in scoredCandidates)
 
   candidates = candidates[0...options.maxResults] if options.maxResults?
