@@ -36,7 +36,6 @@ module.exports = (candidates, query, options={}) ->
       string = if options.key? then candidate[options.key] else candidate
       score = stringScore(string, query)
       score = basenameScore(string, query, score) if queryHasNoSlashes
-
       scoredCandidates.push({candidate, score}) if score > 0
 
     # Sort scores in descending order
