@@ -3,12 +3,13 @@ path = require 'path'
 
 module.exports = (candidates, query, options={}) ->
   if query
+    queryHasNoSlashes = query.indexOf('/') is -1
     scoredCandidates = []
     for candidate in candidates
       string = if options.key? then candidate[options.key] else candidate
       score = stringScore(string, query)
 
-      if query.indexOf('/') is -1
+      if queryHasNoSlashes
         # Basename matches count for more.
         score += stringScore(path.basename(string), query)
 
