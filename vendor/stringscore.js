@@ -19,7 +19,7 @@
  *  'Hello World'.score('he');     //=> 0.5931818181818181
  *  'Hello World'.score('Hello');  //=> 0.7318181818181818
  */
-module.exports = function(string, abbreviation, fuzziness) {
+module.exports = function(string, abbreviation) {
   // If the string is equal to the abbreviation, perfect match.
   if (string == abbreviation) {return 1;}
 
@@ -51,12 +51,7 @@ module.exports = function(string, abbreviation, fuzziness) {
     index_in_string = (min_index > -1) ? min_index : Math.max(index_c_lowercase, index_c_uppercase);
 
     if (index_in_string === -1) {
-      if (fuzziness) {
-        fuzzies += 1-fuzziness;
-        continue;
-      } else {
-        return 0;
-      }
+      return 0;
     } else {
       character_score = 0.1;
     }
