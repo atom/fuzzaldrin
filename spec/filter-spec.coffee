@@ -2,7 +2,7 @@ filter = require '../src/filter'
 
 describe "filtering", ->
   it "returns an array of the most accurate results", ->
-    candidates = ['Gruntfile','filter', 'bile']
+    candidates = ['Gruntfile','filter', 'bile', null, '', undefined]
     expect(filter(candidates, 'file')).toEqual ['filter', 'Gruntfile']
 
   describe "when the maxResults option is set", ->
