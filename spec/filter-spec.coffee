@@ -26,3 +26,6 @@ describe "filtering", ->
 
       candidates = ['/bar/foo', 'bar/////////']
       expect(filter(candidates, 'bar', maxResults: 1)).toEqual ['bar/////////']
+
+    it "prefers basename matches over shallow matches", ->
+      expect(filter(['foo/quix.js', 'foo/bar/baz/quix'], 'quix', maxResults: 1)).toEqual ['foo/bar/baz/quix']
