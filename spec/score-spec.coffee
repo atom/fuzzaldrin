@@ -10,3 +10,4 @@ describe "score(string, query)", ->
     expect(score()).toBe 0
     expect(score(null, 'he')).toBe 0
     expect(score('', '')).toBe 0
+    expect(score('', 'abc')).toBe 0

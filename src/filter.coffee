@@ -20,7 +20,7 @@ basenameScore = (string, query, score) ->
   # Basename matches count for more.
   if base is string
     score *= 2
-  else
+  else if base
     score += stringScore(base, query)
 
   # Shallow files are scored higher

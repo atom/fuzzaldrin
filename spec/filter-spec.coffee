@@ -26,3 +26,8 @@ describe "filtering", ->
 
       candidates = ['/bar/foo', 'bar/////////']
       expect(filter(candidates, 'bar', maxResults: 1)).toEqual ['bar/////////']
+
+  describe "when the candidate is all slashes", ->
+    it "does not throw an exception", ->
+      candidates = ['/']
+      expect(filter(candidates, 'bar', maxResults: 1)).toEqual []
