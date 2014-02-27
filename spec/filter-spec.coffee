@@ -31,3 +31,14 @@ describe "filtering", ->
     it "does not throw an exception", ->
       candidates = ['/']
       expect(filter(candidates, 'bar', maxResults: 1)).toEqual []
+
+  describe "when the entries contains spaces", ->
+    it "treats spaces as slashes", ->
+      candidates = ['/bar/foo', '/foo/bar']
+      expect(filter(candidates, 'br f', maxResults: 1)).toEqual ['/bar/foo']
+
+    it "weighs basename matches higher", ->
+      candidates = ['/bar/foo', '/foo/bar foo']
+      expect(filter(candidates, 'br f', maxResults: 1)).toEqual ['/foo/bar foo']
+      candidates = ['/barfoo/foo', '/foo/barfoo']
+      expect(filter(candidates, 'br f', maxResults: 1)).toEqual ['/foo/barfoo']

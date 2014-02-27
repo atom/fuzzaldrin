@@ -32,6 +32,7 @@ basenameScore = (string, query, score) ->
 module.exports = (candidates, query, {key, maxResults}={}) ->
   if query
     queryHasNoSlashes = query.indexOf('/') is -1
+    query = query.replace(/\ /g, '')
     scoredCandidates = []
     for candidate in candidates
       string = if key? then candidate[key] else candidate
