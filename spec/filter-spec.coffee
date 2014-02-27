@@ -40,3 +40,5 @@ describe "filtering", ->
     it "weighs basename matches higher", ->
       candidates = ['/bar/foo', '/foo/bar foo']
       expect(filter(candidates, 'br f', maxResults: 1)).toEqual ['/foo/bar foo']
+      candidates = ['/barfoo/foo', '/foo/barfoo']
+      expect(filter(candidates, 'br f', maxResults: 1)).toEqual ['/foo/barfoo']
