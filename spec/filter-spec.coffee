@@ -64,3 +64,10 @@ describe "filtering", ->
     expect(bestMatch(['sub-zero', 'sub zero', 'sub_zero'], 'sz')).toBe 'sub-zero'
     expect(bestMatch(['sub zero', 'sub_zero', 'sub-zero'], 'sz')).toBe 'sub zero'
     expect(bestMatch(['sub_zero', 'sub-zero', 'sub zero'], 'sz')).toBe 'sub_zero'
+
+  it "weighs matches at the start of the string or base name higher", ->
+    candidates = ['a_b_c', 'a_b']
+    expect(bestMatch(candidates, 'ab')).toBe 'a_b'
+
+    candidates = ['a_b_c', 'c_a_b']
+    expect(bestMatch(candidates, 'ab')).toBe 'a_b_c'
