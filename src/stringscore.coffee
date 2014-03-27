@@ -18,9 +18,11 @@ module.exports = (string, abbreviation) ->
   abbreviationLength = abbreviation.length
   stringLength = string.length
 
-  index = 0
-  while index < abbreviationLength
-    character = abbreviation[index++]
+  indexInAbbreviation = 0
+  indexInString = 0
+
+  while indexInAbbreviation < abbreviationLength
+    character = abbreviation[indexInAbbreviation++]
     lowerCaseIndex = string.indexOf(character.toLowerCase())
     upperCaseIndex = string.indexOf(character.toUpperCase())
     minIndex = Math.min(lowerCaseIndex, upperCaseIndex)
