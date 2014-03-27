@@ -1,5 +1,7 @@
 stringScore = require '../vendor/stringscore'
 
+SpaceRegex = /\ /g
+
 basenameScore = (string, query, score) ->
   index = string.length - 1
   index-- while string[index] is '/' # Skip trailing slashes
@@ -32,7 +34,7 @@ basenameScore = (string, query, score) ->
 module.exports = (candidates, query, {key, maxResults}={}) ->
   if query
     queryHasNoSlashes = query.indexOf('/') is -1
-    query = query.replace(/\ /g, '')
+    query = query.replace(SpaceRegex, '')
     scoredCandidates = []
     for candidate in candidates
       string = if key? then candidate[key] else candidate
