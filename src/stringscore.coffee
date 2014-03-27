@@ -1,5 +1,3 @@
-UnderscoreDashRegex = /[_-]/g
-
 # Original ported from:
 #
 # string_score.js: String Scoring Algorithm 0.1.10
@@ -15,8 +13,6 @@ UnderscoreDashRegex = /[_-]/g
 
 module.exports = (string, abbreviation) ->
   return 1 if string is abbreviation
-
-  string = string.replace(UnderscoreDashRegex, '')
 
   totalCharacterScore = 0
   abbreviationLength = abbreviation.length

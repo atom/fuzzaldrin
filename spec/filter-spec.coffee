@@ -52,7 +52,10 @@ describe "filtering", ->
 
   describe "when the entries contains mixed case", ->
     it "weighs exact case matches higher", ->
-      candidates = ['status_url', 'StatusUrl']
+      candidates = ['statusurl', 'StatusUrl']
       expect(bestMatch(candidates, 'Status')).toBe 'StatusUrl'
-      expect(bestMatch(candidates, 'status')).toBe 'status_url'
-      expect(bestMatch(candidates, 'status_url')).toBe 'status_url'
+      expect(bestMatch(candidates, 'SU')).toBe 'StatusUrl'
+      expect(bestMatch(candidates, 'status')).toBe 'statusurl'
+      expect(bestMatch(candidates, 'su')).toBe 'statusurl'
+      expect(bestMatch(candidates, 'statusurl')).toBe 'statusurl'
+      expect(bestMatch(candidates, 'StatusUrl')).toBe 'StatusUrl'
