@@ -1,6 +1,6 @@
 UnderscoreDashRegex = /[_-]/g
 
-# Original ported from JavaScript:
+# Original ported from:
 #
 # string_score.js: String Scoring Algorithm 0.1.10
 #
