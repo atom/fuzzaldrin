@@ -36,7 +36,7 @@ module.exports = (string, abbreviation) ->
     characterScore += 0.1 if string[indexInString] is character
 
     # Start of string/word bonus
-    if indexInString is 0 or string[indexInString - 1] is ' '
+    if indexInString is 0 or string[indexInString - 1] in [' ', '-', '_']
       characterScore += 0.8
 
     # Left trim the already matched part of the string

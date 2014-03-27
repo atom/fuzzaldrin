@@ -59,3 +59,8 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'su')).toBe 'statusurl'
       expect(bestMatch(candidates, 'statusurl')).toBe 'statusurl'
       expect(bestMatch(candidates, 'StatusUrl')).toBe 'StatusUrl'
+
+  it "weighs abbreviation matches after spaces, underscores, and dashes the same", ->
+    expect(bestMatch(['sub-zero', 'sub zero', 'sub_zero'], 'sz')).toBe 'sub-zero'
+    expect(bestMatch(['sub zero', 'sub_zero', 'sub-zero'], 'sz')).toBe 'sub zero'
+    expect(bestMatch(['sub_zero', 'sub-zero', 'sub zero'], 'sz')).toBe 'sub_zero'
