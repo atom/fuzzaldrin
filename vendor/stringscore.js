@@ -14,6 +14,8 @@
  * Date: Tue Mar 1 2011
 */
 
+var UnderscoreDashRegex = /[_-]/g;
+
 /**
  * Scores a string against another string.
  *  'Hello World'.score('he');     //=> 0.5931818181818181
@@ -22,6 +24,8 @@
 module.exports = function(string, abbreviation) {
   // If the string is equal to the abbreviation, perfect match.
   if (string == abbreviation) {return 1;}
+
+  string = string.replace(UnderscoreDashRegex, '');
 
   var total_character_score = 0,
       abbreviation_length = abbreviation.length,

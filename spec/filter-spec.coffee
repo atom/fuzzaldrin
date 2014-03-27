@@ -48,3 +48,4 @@ describe "filtering", ->
       candidates = ['status_url', 'StatusUrl']
       expect(filter(candidates, 'Status', maxResults: 1)).toEqual ['StatusUrl']
       expect(filter(candidates, 'status', maxResults: 1)).toEqual ['status_url']
+      expect(filter(candidates, 'status_url', maxResults: 1)).toEqual ['status_url']
