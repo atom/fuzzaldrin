@@ -37,15 +37,9 @@ module.exports = (string, abbreviation) ->
     # Same case bonus.
     characterScore += 0.1 if string[indexInString] is character
 
-    # Consecutive letter & start-of-string Bonus
-    if indexInString is 0
-      # Increase the score when matching first character of the remainder of the string
-      characterScore += 0.6
-    else
-      # Acronym Bonus
-      # Weighing Logic: Typing the first character of an acronym is as if you
-      # preceded it with two perfect character matches.
-      characterScore += 0.8 if string[indexInString - 1] is ' '
+    # Start of string/word bonus
+    if indexInString is 0 or string[indexInString - 1] is ' '
+      characterScore += 0.8
 
     # Left trim the already matched part of the string
     # (forces sequential matching).
