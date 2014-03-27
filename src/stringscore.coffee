@@ -45,7 +45,7 @@ module.exports = (string, abbreviation) ->
       # Acronym Bonus
       # Weighing Logic: Typing the first character of an acronym is as if you
       # preceded it with two perfect character matches.
-      characterScore += 0.8 if string.charAt(indexInString - 1) is ' '
+      characterScore += 0.8 if string[indexInString - 1] is ' '
 
     # Left trim the already matched part of the string
     # (forces sequential matching).
