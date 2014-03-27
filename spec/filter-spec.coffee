@@ -30,6 +30,9 @@ describe "filtering", ->
       candidates = ['/bar/foo', 'bar/////////']
       expect(bestMatch(candidates, 'bar')).toBe 'bar/////////'
 
+      candidates = ['f/o/1_a_z', 'f/o/a_z']
+      expect(bestMatch(candidates, 'az')).toBe 'f/o/a_z'
+
   describe "when the candidate is all slashes", ->
     it "does not throw an exception", ->
       candidates = ['/']
@@ -66,8 +69,6 @@ describe "filtering", ->
     expect(bestMatch(['sub_zero', 'sub-zero', 'sub zero'], 'sz')).toBe 'sub_zero'
 
   it "weighs matches at the start of the string or base name higher", ->
-    candidates = ['a_b_c', 'a_b']
-    expect(bestMatch(candidates, 'ab')).toBe 'a_b'
-
-    candidates = ['a_b_c', 'c_a_b']
-    expect(bestMatch(candidates, 'ab')).toBe 'a_b_c'
+    expect(bestMatch(['a_b_c', 'a_b'], 'ab')).toBe 'a_b'
+    expect(bestMatch(['z_a_b', 'a_b'], 'ab')).toBe 'a_b'
+    expect(bestMatch(['a_b_c', 'c_a_b'], 'ab')).toBe 'a_b_c'
