@@ -42,3 +42,9 @@ describe "filtering", ->
       expect(filter(candidates, 'br f', maxResults: 1)).toEqual ['/foo/bar foo']
       candidates = ['/barfoo/foo', '/foo/barfoo']
       expect(filter(candidates, 'br f', maxResults: 1)).toEqual ['/foo/barfoo']
+
+  describe "when the entries contains mixed case", ->
+    it "weighs exact case matches higher", ->
+      candidates = ['status_url', 'StatusUrl']
+      expect(filter(candidates, 'Status', maxResults: 1)).toEqual ['StatusUrl']
+      expect(filter(candidates, 'status', maxResults: 1)).toEqual ['status_url']
