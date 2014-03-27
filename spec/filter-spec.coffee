@@ -40,8 +40,12 @@ describe "filtering", ->
     it "weighs basename matches higher", ->
       candidates = ['/bar/foo', '/foo/bar foo']
       expect(filter(candidates, 'br f', maxResults: 1)).toEqual ['/foo/bar foo']
+
       candidates = ['/barfoo/foo', '/foo/barfoo']
       expect(filter(candidates, 'br f', maxResults: 1)).toEqual ['/foo/barfoo']
+
+      candidates = ['lib/exportable.rb', 'app/models/table.rb']
+      expect(filter(candidates, 'table', maxResults: 1)[0]).toBe 'app/models/table.rb'
 
   describe "when the entries contains mixed case", ->
     it "weighs exact case matches higher", ->
