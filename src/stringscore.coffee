@@ -23,7 +23,7 @@ module.exports = (string, abbreviation) ->
   stringLength = string.length
 
   index = 0
-  while index < abbreviation.length
+  while index < abbreviationLength
     character = abbreviation[index++]
     lowerCaseIndex = string.indexOf(character.toLowerCase())
     upperCaseIndex = string.indexOf(character.toUpperCase())
