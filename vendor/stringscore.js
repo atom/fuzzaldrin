@@ -70,12 +70,6 @@ module.exports = function(string, abbreviation) {
     if (index_in_string === 0) {
       // Increase the score when matching first character of the remainder of the string
       character_score += 0.6;
-      if (i === 0) {
-        // If match is the first character of the string
-        // & the first character of abbreviation, add a
-        // start-of-string match bonus.
-        // start_of_string_bonus = 1 //true;
-      }
     }
     else {
       // Acronym Bonus
