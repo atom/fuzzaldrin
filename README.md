@@ -2,6 +2,12 @@
 
 Fuzzy filtering and string scoring.
 
+This library is used by [Atom](http://atom.io) and so its focus will be on
+scoring and filtering paths, methods, and other things common when writing code.
+It therefore will specialize in handling common patterns in these types of
+strings such as characters like `/`, `-`, and `_`, and also handling of
+camel cased text.
+
 ## Using
 
 ```sh
@@ -17,7 +23,7 @@ Sort and filter the given candidates by matching them against the given query.
 * `options` - An optional object with the following keys:
   * `key` - The property to use for scoring if the candidates are objects.
   * `maxResults` - The maximum numbers of results to return.
-  
+
 Returns an array of candidates sorted by best match against the query.
 
 ```coffee
