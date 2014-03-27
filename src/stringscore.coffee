@@ -35,9 +35,12 @@ module.exports = (string, abbreviation) ->
     # Same case bonus.
     characterScore += 0.1 if string[indexInString] is character
 
-    # Start of string/word bonus
-    if indexInString is 0 or string[indexInString - 1] in [' ', '-', '_', '/']
+    if indexInString is 0 or string[indexInString - 1] is '/'
+      # Start of string bonus
       characterScore += 0.8
+    else if string[indexInString - 1] in ['-', '_', ' ']
+      # Start of word bonus
+      characterScore += 0.7
 
     # Trim string to after current abbreviation match
     string = string.substring(indexInString + 1, stringLength)

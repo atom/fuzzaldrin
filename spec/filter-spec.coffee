@@ -30,8 +30,8 @@ describe "filtering", ->
       candidates = ['/bar/foo', 'bar/////////']
       expect(bestMatch(candidates, 'bar')).toBe 'bar/////////'
 
-      candidates = ['f/o/1_a_z', 'f/o/a_z']
-      expect(bestMatch(candidates, 'az')).toBe 'f/o/a_z'
+      expect(bestMatch(['f/o/1_a_z', 'f/o/a_z'], 'az')).toBe 'f/o/a_z'
+      expect(bestMatch(['f/1_a_z', 'f/o/a_z'], 'az')).toBe 'f/o/a_z'
 
   describe "when the candidate is all slashes", ->
     it "does not throw an exception", ->
