@@ -39,8 +39,7 @@ module.exports = (string, abbreviation) ->
     if indexInString is 0 or string[indexInString - 1] in [' ', '-', '_', '/']
       characterScore += 0.8
 
-    # Left trim the already matched part of the string
-    # (forces sequential matching).
+    # Trim string to after current abbreviation match
     string = string.substring(indexInString + 1, stringLength)
 
     totalCharacterScore += characterScore
