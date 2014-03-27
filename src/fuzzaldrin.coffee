@@ -1,4 +1,4 @@
-stringScore = require '../vendor/stringscore'
+stringScore = require './stringscore'
 
 module.exports =
   filter: require './filter'

@@ -1,4 +1,4 @@
-stringScore = require '../vendor/stringscore'
+stringScore = require './stringscore'
 
 SpaceRegex = /\ /g
 
