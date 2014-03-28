@@ -11,18 +11,47 @@
 #
 # Date: Tue Mar 1 2011
 
-module.exports = (string, abbreviation) ->
-  return 1 if string is abbreviation
+exports.basenameScore = (string, query, score) ->
+  index = string.length - 1
+  index-- while string[index] is '/' # Skip trailing slashes
+  slashCount = 0
+  lastCharacter = index
+  base = null
+  while index >= 0
+    if string[index] is '/'
+      slashCount++
+      base ?= string.substring(index + 1, lastCharacter + 1)
+    else if index is 0
+      if lastCharacter < string.length - 1
+        base ?= string.substring(0, lastCharacter + 1)
+      else
+        base ?= string
+    index--
+
+  # Basename matches count for more.
+  if base is string
+    score *= 2
+  else if base
+    score += exports.score(base, query)
+
+  # Shallow files are scored higher
+  segmentCount = slashCount + 1
+  depth = Math.max(1, 10 - segmentCount)
+  score *= depth * 0.01
+  score
+
+exports.score = (string, query) ->
+  return 1 if string is query
 
   totalCharacterScore = 0
-  abbreviationLength = abbreviation.length
+  queryLength = query.length
   stringLength = string.length
 
-  indexInAbbreviation = 0
+  indexInQuery = 0
   indexInString = 0
 
-  while indexInAbbreviation < abbreviationLength
-    character = abbreviation[indexInAbbreviation++]
+  while indexInQuery < queryLength
+    character = query[indexInQuery++]
     lowerCaseIndex = string.indexOf(character.toLowerCase())
     upperCaseIndex = string.indexOf(character.toUpperCase())
     minIndex = Math.min(lowerCaseIndex, upperCaseIndex)
@@ -47,5 +76,5 @@ module.exports = (string, abbreviation) ->
 
     totalCharacterScore += characterScore
 
-  abbreviationScore = totalCharacterScore / abbreviationLength
-  ((abbreviationScore * (abbreviationLength / stringLength)) + abbreviationScore) / 2
+  queryScore = totalCharacterScore / queryLength
+  ((queryScore * (queryLength / stringLength)) + queryScore) / 2

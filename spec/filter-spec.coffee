@@ -1,4 +1,4 @@
-filter = require '../src/filter'
+{filter} = require '../src/fuzzaldrin'
 
 bestMatch = (candidates, query) ->
   filter(candidates, query, maxResults: 1)[0]
