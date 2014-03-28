@@ -54,8 +54,8 @@ Score the given string against the given query.
 ```coffee
 {score} = require 'fuzzaldrin'
 
-score('Me', 'me') # 0.75
-score('Maybe', 'me') # 0.31499999999999995
+score('Me', 'me')    # 0.17099999999999999
+score('Maybe', 'me') # 0.0693
 ```
 
 ## Developing
