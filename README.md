@@ -66,3 +66,9 @@ cd fuzzaldrin
 npm install
 npm test
 ```
+
+You can run the benchmarks using:
+
+```sh
+npm run benchmark
+```
