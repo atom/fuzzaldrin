@@ -1,4 +1,4 @@
-scorer = require './stringscore'
+scorer = require './scorer'
 
 module.exports = (candidates, query, queryHasSlashes, {key, maxResults}={}) ->
   if query

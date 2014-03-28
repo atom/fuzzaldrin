@@ -1,4 +1,4 @@
-scorer = require './stringscore'
+scorer = require './scorer'
 filter = require './filter'
 
 SpaceRegex = /\ /g
