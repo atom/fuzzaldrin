@@ -10,5 +10,5 @@ results = filter(lines, 'index')
 console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results.length} results")
 
 if results.length isnt 6168
-  console.error("Results count changed! #{results.length} instead of 514")
+  console.error("Results count changed! #{results.length} instead of 6168")
   process.exit(1)
