@@ -22,8 +22,7 @@ exports.match = (string, query) ->
     return [string] if indexInString is -1
 
     before = string.substring(0, indexInString)
-    unless matchedChars.length
-      matches.push(before)
+    matches.push(before) if matchedChars.length is 0
 
     if indexInString isnt 0 and matchedChars.length > 1
       matches.push(matchedChars.join(''))
@@ -35,7 +34,6 @@ exports.match = (string, query) ->
     if indexInQuery is queryLength
       matches.push(matchedChars.join(''))
       matches.push(string.substring(indexInString + 1, stringLength))
-
 
     # Trim string to after current abbreviation match
     string = string.substring(indexInString + 1, stringLength)
