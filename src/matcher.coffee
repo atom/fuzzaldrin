@@ -2,7 +2,6 @@
 exports.match = (string, query) ->
   return 1 if string is query
 
-  totalCharacterScore = 0
   queryLength = query.length
   stringLength = string.length
 
