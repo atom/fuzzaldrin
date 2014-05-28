@@ -22,7 +22,7 @@ exports.match = (string, query) ->
     return [string] if indexInString is -1
 
     before = string.substring(0, indexInString)
-    if not matchedChars.length
+    unless matchedChars.length
       matches.push(before)
 
     if indexInString isnt 0 and matchedChars.length > 1
