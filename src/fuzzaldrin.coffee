@@ -27,8 +27,5 @@ module.exports =
     return [string] unless query
     return ['', string] if string is query
 
-    queryHasSlashes = query.indexOf('/') isnt -1
     query = query.replace(SpaceRegex, '')
-    matches = matcher.match(string, query)
-    matches
-
+    matcher.match(string, query)
