@@ -19,8 +19,7 @@ exports.basenameMatch = (string, query) ->
         base ?= string
     index--
 
-  matches = exports.match(base, query, string.length - base.length)
-  matches
+  exports.match(base, query, string.length - base.length)
 
 
 exports.match = (string, query, stringOffset=0) ->
