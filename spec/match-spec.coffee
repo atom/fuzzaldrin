@@ -15,11 +15,11 @@ describe "match(string, query)", ->
     expect(match('', 'abc')).toEqual []
 
   it "matches paths with slashes", ->
+    expect(match('X/Y', 'X/Y')).toEqual [0..2]
     expect(match('X/X-x', 'X')).toEqual [0, 2]
     expect(match('X/Y', 'XY')).toEqual [0, 2]
     expect(match('-/X', 'X')).toEqual [2]
     expect(match('X-/-', 'X/')).toEqual [0, 2]
-
 
   it "double matches characters in the path and the base", ->
 
