@@ -25,7 +25,7 @@ module.exports =
   match: (string, query) ->
     return [] unless string
     return [] unless query
-    return [0..string.length - 1] if string is query
+    return [0...string.length] if string is query
 
     queryHasSlashes = query.indexOf('/') isnt -1
     query = query.replace(SpaceRegex, '')

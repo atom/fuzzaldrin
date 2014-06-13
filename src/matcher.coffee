@@ -23,7 +23,7 @@ exports.basenameMatch = (string, query) ->
 
 
 exports.match = (string, query, stringOffset=0) ->
-  return [stringOffset..stringOffset + string.length - 1] if string is query
+  return [stringOffset...stringOffset + string.length] if string is query
 
   queryLength = query.length
   stringLength = string.length
