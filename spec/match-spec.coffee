@@ -16,7 +16,7 @@ describe "match(string, query)", ->
     expect(match('', 'abc')).toEqual []
 
   it "matches paths with slashes", ->
-    expect(match(path.join('X', 'Y'), path.join('X', 'Y')).toEqual [0..2]
+    expect(match(path.join('X', 'Y'), path.join('X', 'Y'))).toEqual [0..2]
     expect(match(path.join('X', 'X-x'), 'X')).toEqual [0, 2]
     expect(match(path.join('X', 'Y'), 'XY')).toEqual [0, 2]
     expect(match(path.join('-', 'X'), 'X')).toEqual [2]
