@@ -11,14 +11,16 @@
 #
 # Date: Tue Mar 1 2011
 
+PathSeparator = require('path').sep
+
 exports.basenameScore = (string, query, score) ->
   index = string.length - 1
-  index-- while string[index] is '/' # Skip trailing slashes
+  index-- while string[index] is PathSeparator # Skip trailing slashes
   slashCount = 0
   lastCharacter = index
   base = null
   while index >= 0
-    if string[index] is '/'
+    if string[index] is PathSeparator
       slashCount++
       base ?= string.substring(index + 1, lastCharacter + 1)
     else if index is 0
@@ -44,7 +46,7 @@ exports.score = (string, query) ->
   return 1 if string is query
 
   # Return a perfect score if the file name itself matches the query.
-  return 1 if queryIsLastPathSegment string, query
+  return 1 if queryIsLastPathSegment(string, query)
 
   totalCharacterScore = 0
   queryLength = query.length
@@ -67,7 +69,7 @@ exports.score = (string, query) ->
     # Same case bonus.
     characterScore += 0.1 if string[indexInString] is character
 
-    if indexInString is 0 or string[indexInString - 1] is '/'
+    if indexInString is 0 or string[indexInString - 1] is PathSeparator
       # Start of string bonus
       characterScore += 0.8
     else if string[indexInString - 1] in ['-', '_', ' ']
@@ -83,5 +85,5 @@ exports.score = (string, query) ->
   ((queryScore * (queryLength / stringLength)) + queryScore) / 2
 
 queryIsLastPathSegment = (string, query) ->
-  index = string.lastIndexOf query
-  index is string.length - query.length and string[index-1] is '/'
+  if string[string.length - query.length - 1] is PathSeparator
+    string.lastIndexOf(query) is string.length - query.length

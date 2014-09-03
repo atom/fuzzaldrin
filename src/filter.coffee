@@ -1,5 +1,9 @@
 scorer = require './scorer'
 
+pluckCandidates = (a) -> a.candidate
+
+sortCandidates = (a, b) -> b.score - a.score
+
 module.exports = (candidates, query, queryHasSlashes, {key, maxResults}={}) ->
   if query
     scoredCandidates = []
@@ -12,9 +16,9 @@ module.exports = (candidates, query, queryHasSlashes, {key, maxResults}={}) ->
       scoredCandidates.push({candidate, score}) if score > 0
 
     # Sort scores in descending order
-    scoredCandidates.sort (a, b) -> b.score - a.score
+    scoredCandidates.sort(sortCandidates)
 
-    candidates = (scoredCandidate.candidate for scoredCandidate in scoredCandidates)
+    candidates = scoredCandidates.map(pluckCandidates)
 
   candidates = candidates[0...maxResults] if maxResults?
   candidates

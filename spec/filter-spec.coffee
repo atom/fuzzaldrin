@@ -1,7 +1,17 @@
+path = require 'path'
 {filter} = require '../src/fuzzaldrin'
 
 bestMatch = (candidates, query) ->
   filter(candidates, query, maxResults: 1)[0]
+
+rootPath = (segments...) ->
+  joinedPath = if process.platform is 'win32' then 'C:\\' else '/'
+  for segment in segments
+    if segment is path.sep
+      joinedPath += segment
+    else
+      joinedPath = path.join(joinedPath, segment)
+  joinedPath
 
 describe "filtering", ->
   it "returns an array of the most accurate results", ->
@@ -15,43 +25,72 @@ describe "filtering", ->
 
   describe "when the entries contains slashes", ->
     it "weighs basename matches higher", ->
-      candidates = ['/bar/foo', '/foo/bar']
-      expect(bestMatch(candidates, 'bar')).toBe '/foo/bar'
+      candidates = [
+        rootPath('bar', 'foo')
+        rootPath('foo', 'bar')
+      ]
+      expect(bestMatch(candidates, 'bar')).toBe candidates[1]
 
-      candidates = ['/bar/foo', '/foo/bar/////////']
-      expect(bestMatch(candidates, 'bar')).toBe '/foo/bar/////////'
+      candidates = [
+        rootPath('bar', 'foo')
+        rootPath('foo', 'bar', path.sep, path.sep, path.sep, path.sep, path.sep)
+      ]
+      expect(bestMatch(candidates, 'bar')).toBe candidates[1]
 
-      candidates = ['/bar/foo', '/foo/bar', 'bar']
-      expect(bestMatch(candidates, 'bar')).toEqual 'bar'
+      candidates = [
+        rootPath('bar', 'foo')
+        rootPath('foo', 'bar')
+        'bar'
+      ]
+      expect(bestMatch(candidates, 'bar')).toEqual candidates[2]
 
-      candidates = ['/bar/foo', '/foo/bar', '/bar']
-      expect(bestMatch(candidates, 'bar')).toBe '/bar'
+      candidates = [
+        rootPath('bar', 'foo')
+        rootPath('foo', 'bar')
+        rootPath('bar')
+      ]
+      expect(bestMatch(candidates, 'bar')).toBe candidates[2]
 
-      candidates = ['/bar/foo', 'bar/////////']
-      expect(bestMatch(candidates, 'bar')).toBe 'bar/////////'
+      candidates = [
+        rootPath('bar', 'foo')
+        "bar#{path.sep}#{path.sep}#{path.sep}#{path.sep}#{path.sep}#{path.sep}"
+      ]
+      expect(bestMatch(candidates, 'bar')).toBe candidates[1]
 
-      expect(bestMatch(['f/o/1_a_z', 'f/o/a_z'], 'az')).toBe 'f/o/a_z'
-      expect(bestMatch(['f/1_a_z', 'f/o/a_z'], 'az')).toBe 'f/o/a_z'
+      expect(bestMatch([path.join('f', 'o', '1_a_z'), path.join('f', 'o', 'a_z')], 'az')).toBe path.join('f', 'o', 'a_z')
+      expect(bestMatch([path.join('f', '1_a_z'), path.join('f', 'o', 'a_z')], 'az')).toBe path.join('f', 'o', 'a_z')
 
   describe "when the candidate is all slashes", ->
     it "does not throw an exception", ->
-      candidates = ['/']
+      candidates = [path.sep]
       expect(filter(candidates, 'bar', maxResults: 1)).toEqual []
 
   describe "when the entries contains spaces", ->
     it "treats spaces as slashes", ->
-      candidates = ['/bar/foo', '/foo/bar']
-      expect(bestMatch(candidates, 'br f')).toBe '/bar/foo'
+      candidates = [
+        rootPath('bar', 'foo')
+        rootPath('foo', 'bar')
+      ]
+      expect(bestMatch(candidates, 'br f')).toBe candidates[0]
 
     it "weighs basename matches higher", ->
-      candidates = ['/bar/foo', '/foo/bar foo']
-      expect(bestMatch(candidates, 'br f')).toBe '/foo/bar foo'
+      candidates = [
+        rootPath('bar', 'foo')
+        rootPath('foo', 'bar foo')
+      ]
+      expect(bestMatch(candidates, 'br f')).toBe candidates[1]
 
-      candidates = ['/barfoo/foo', '/foo/barfoo']
-      expect(bestMatch(candidates, 'br f')).toBe '/foo/barfoo'
+      candidates = [
+        rootPath('barfoo', 'foo')
+        rootPath('foo', 'barfoo')
+      ]
+      expect(bestMatch(candidates, 'br f')).toBe candidates[1]
 
-      candidates = ['lib/exportable.rb', 'app/models/table.rb']
-      expect(bestMatch(candidates, 'table')).toBe 'app/models/table.rb'
+      candidates = [
+        path.join('lib', 'exportable.rb')
+        path.join('app', 'models', 'table.rb')
+      ]
+      expect(bestMatch(candidates, 'table')).toBe candidates[1]
 
   describe "when the entries contains mixed case", ->
     it "weighs exact case matches higher", ->
@@ -75,14 +114,26 @@ describe "filtering", ->
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->
-      candidates = ['app/models/automotive/car.rb', 'spec/factories/cars.rb']
-      expect(bestMatch(candidates, 'car.rb')).toBe 'app/models/automotive/car.rb'
+      candidates = [
+        path.join('app', 'models', 'automotive', 'car.rb')
+        path.join('spec', 'factories', 'cars.rb')
+      ]
+      expect(bestMatch(candidates, 'car.rb')).toBe candidates[0]
 
-      candidates = ['app/models/automotive/car.rb', 'car.rb']
-      expect(bestMatch(candidates, 'car.rb')).toBe 'car.rb'
+      candidates = [
+        path.join('app', 'models', 'automotive', 'car.rb')
+        'car.rb'
+      ]
+      expect(bestMatch(candidates, 'car.rb')).toBe candidates[1]
 
-      candidates = ['car.rb', 'app/models/automotive/car.rb']
-      expect(bestMatch(candidates, 'car.rb')).toBe 'car.rb'
+      candidates = [
+        'car.rb',
+        path.join('app', 'models', 'automotive', 'car.rb')
+      ]
+      expect(bestMatch(candidates, 'car.rb')).toBe candidates[0]
 
-      candidates = ['app/models/cars/car.rb', 'spec/cars.rb']
-      expect(bestMatch(candidates, 'car.rb')).toBe 'app/models/cars/car.rb'
+      candidates = [
+        path.join('app', 'models', 'cars', 'car.rb')
+        path.join('spec', 'cars.rb')
+      ]
+      expect(bestMatch(candidates, 'car.rb')).toBe candidates[0]
