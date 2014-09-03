@@ -77,3 +77,9 @@ describe "filtering", ->
     it "places exact matches first, even if they're deeper", ->
       candidates = ['app/models/automotive/car.rb', 'spec/factories/cars.rb']
       expect(bestMatch(candidates, 'car.rb')).toBe 'app/models/automotive/car.rb'
+
+      candidates = ['app/models/automotive/car.rb', 'car.rb']
+      expect(bestMatch(candidates, 'car.rb')).toBe 'car.rb'
+
+      candidates = ['car.rb', 'app/models/automotive/car.rb']
+      expect(bestMatch(candidates, 'car.rb')).toBe 'car.rb'
