@@ -5,8 +5,13 @@ bestMatch = (candidates, query) ->
   filter(candidates, query, maxResults: 1)[0]
 
 rootPath = (segments...) ->
-  root = if process.platform is 'win32' then 'C:\\' else '/'
-  root + path.join(segments...)
+  joinedPath = if process.platform is 'win32' then 'C:\\' else '/'
+  for segment in segments
+    if segment is path.sep
+      joinedPath += segment
+    else
+      joinedPath = path.join(joinedPath, segment)
+  joinedPath
 
 describe "filtering", ->
   it "returns an array of the most accurate results", ->
@@ -30,6 +35,7 @@ describe "filtering", ->
         rootPath('bar', 'foo')
         rootPath('foo', 'bar', path.sep, path.sep, path.sep, path.sep, path.sep)
       ]
+      console.log candidates[1]
       expect(bestMatch(candidates, 'bar')).toBe candidates[1]
 
       candidates = [
