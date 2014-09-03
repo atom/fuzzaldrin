@@ -1,4 +1,7 @@
-# fuzzaldrin [![Build Status](https://travis-ci.org/atom/fuzzaldrin.svg?branch=master)](https://travis-ci.org/atom/fuzzaldrin)
+# fuzzaldrin
+
+[![Build Status](https://travis-ci.org/atom/fuzzaldrin.svg?branch=master)](https://travis-ci.org/atom/fuzzaldrin)
+[![Build status](https://ci.appveyor.com/api/projects/status/0ig71rjdgfm7y9c1/branch/master)](https://ci.appveyor.com/project/kevinsawicki/fuzzaldrin/branch/master)
 
 Fuzzy filtering and string scoring.
 
