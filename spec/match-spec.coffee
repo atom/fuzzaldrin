@@ -22,6 +22,5 @@ describe "match(string, query)", ->
     expect(match('X-/-', 'X/')).toEqual [0, 2]
 
   it "double matches characters in the path and the base", ->
-
     expect(match('XY/XY', 'XY')).toEqual [0, 1, 3, 4]
     expect(match('--X-Y-/-X--Y', 'XY')).toEqual [2, 4, 8, 11]
