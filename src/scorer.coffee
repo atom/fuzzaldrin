@@ -42,7 +42,6 @@ exports.basenameScore = (string, query, score) ->
 
 exports.score = (string, query) ->
   return 1 if string is query
-  return 1 if string.split('/')[-1] == query
 
   totalCharacterScore = 0
   queryLength = query.length
