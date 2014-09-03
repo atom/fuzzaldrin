@@ -2,12 +2,13 @@ scorer = require './scorer'
 filter = require './filter'
 matcher = require './matcher'
 
+PathSeparator = require('path').sep
 SpaceRegex = /\ /g
 
 module.exports =
   filter: (candidates, query, options) ->
     if query
-      queryHasSlashes = query.indexOf('/') isnt -1
+      queryHasSlashes = query.indexOf(PathSeparator) isnt -1
       query = query.replace(SpaceRegex, '')
     filter(candidates, query, queryHasSlashes, options)
 
@@ -16,7 +17,7 @@ module.exports =
     return 0 unless query
     return 2 if string is query
 
-    queryHasSlashes = query.indexOf('/') isnt -1
+    queryHasSlashes = query.indexOf(PathSeparator) isnt -1
     query = query.replace(SpaceRegex, '')
     score = scorer.score(string, query)
     score = scorer.basenameScore(string, query, score) unless queryHasSlashes
@@ -27,7 +28,7 @@ module.exports =
     return [] unless query
     return [0...string.length] if string is query
 
-    queryHasSlashes = query.indexOf('/') isnt -1
+    queryHasSlashes = query.indexOf(PathSeparator) isnt -1
     query = query.replace(SpaceRegex, '')
     matches = matcher.match(string, query)
     unless queryHasSlashes

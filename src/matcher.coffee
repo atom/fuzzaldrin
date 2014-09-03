@@ -2,14 +2,16 @@
 # This file should closely follow `scorer` except that it returns an array
 # of indexes instead of a score.
 
+PathSeparator = require('path').sep
+
 exports.basenameMatch = (string, query) ->
   index = string.length - 1
-  index-- while string[index] is '/' # Skip trailing slashes
+  index-- while string[index] is PathSeparator # Skip trailing slashes
   slashCount = 0
   lastCharacter = index
   base = null
   while index >= 0
-    if string[index] is '/'
+    if string[index] is PathSeparator
       slashCount++
       base ?= string.substring(index + 1, lastCharacter + 1)
     else if index is 0

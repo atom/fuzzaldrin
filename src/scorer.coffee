@@ -11,14 +11,16 @@
 #
 # Date: Tue Mar 1 2011
 
+PathSeparator = require('path').sep
+
 exports.basenameScore = (string, query, score) ->
   index = string.length - 1
-  index-- while string[index] is '/' # Skip trailing slashes
+  index-- while string[index] is PathSeparator # Skip trailing slashes
   slashCount = 0
   lastCharacter = index
   base = null
   while index >= 0
-    if string[index] is '/'
+    if string[index] is PathSeparator
       slashCount++
       base ?= string.substring(index + 1, lastCharacter + 1)
     else if index is 0
@@ -67,7 +69,7 @@ exports.score = (string, query) ->
     # Same case bonus.
     characterScore += 0.1 if string[indexInString] is character
 
-    if indexInString is 0 or string[indexInString - 1] is '/'
+    if indexInString is 0 or string[indexInString - 1] is PathSeparator
       # Start of string bonus
       characterScore += 0.8
     else if string[indexInString - 1] in ['-', '_', ' ']
