@@ -72,3 +72,8 @@ describe "filtering", ->
     expect(bestMatch(['a_b_c', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['z_a_b', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['a_b_c', 'c_a_b'], 'ab')).toBe 'a_b_c'
+
+  describe "when the entries are of differing directory depths", ->
+    it "places exact matches first, even if they're deeper", ->
+      candidates = ['app/models/automotive/car.rb', 'spec/factories/cars.rb']
+      expect(bestMatch(candidates, 'car.rb')).toBe 'app/models/automotive/car.rb'
