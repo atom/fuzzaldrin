@@ -35,7 +35,6 @@ describe "filtering", ->
         rootPath('bar', 'foo')
         rootPath('foo', 'bar', path.sep, path.sep, path.sep, path.sep, path.sep)
       ]
-      console.log candidates[1]
       expect(bestMatch(candidates, 'bar')).toBe candidates[1]
 
       candidates = [
