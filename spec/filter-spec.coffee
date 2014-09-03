@@ -83,3 +83,6 @@ describe "filtering", ->
 
       candidates = ['car.rb', 'app/models/automotive/car.rb']
       expect(bestMatch(candidates, 'car.rb')).toBe 'car.rb'
+
+      candidates = ['app/models/cars/car.rb', 'spec/cars.rb']
+      expect(bestMatch(candidates, 'car.rb')).toBe 'app/models/cars/car.rb'
