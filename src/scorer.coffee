@@ -43,6 +43,9 @@ exports.basenameScore = (string, query, score) ->
 exports.score = (string, query) ->
   return 1 if string is query
 
+  # Return a perfect score if the file name itself matches the query.
+  return 1 if queryIsLastPathSegment string, query
+
   totalCharacterScore = 0
   queryLength = query.length
   stringLength = string.length
@@ -78,3 +81,7 @@ exports.score = (string, query) ->
 
   queryScore = totalCharacterScore / queryLength
   ((queryScore * (queryLength / stringLength)) + queryScore) / 2
+
+queryIsLastPathSegment = (string, query) ->
+  index = string.lastIndexOf query
+  index is string.length - query.length and string[index-1] is '/'
