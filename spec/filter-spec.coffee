@@ -112,7 +112,7 @@ describe "filtering", ->
     expect(bestMatch(['z_a_b', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['a_b_c', 'c_a_b'], 'ab')).toBe 'a_b_c'
 
-  it "weights matches that are substring matches higher", ->
+  it "weighs matches that are substring matches higher", ->
     expect(bestMatch(['/a/b/c/install.txt', 'inst-all.txt'])).toBe '/a/b/c/install.txt'
 
   describe "when the entries are of differing directory depths", ->
