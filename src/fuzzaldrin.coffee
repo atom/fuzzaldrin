@@ -21,6 +21,7 @@ module.exports =
     query = query.replace(SpaceRegex, '')
     score = scorer.score(string, query)
     score = scorer.basenameScore(string, query, score) unless queryHasSlashes
+    score = scorer.substringScore(string, query, score)
     score
 
   match: (string, query) ->
