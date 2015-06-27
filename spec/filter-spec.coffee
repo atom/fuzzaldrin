@@ -16,12 +16,12 @@ rootPath = (segments...) ->
 describe "filtering", ->
   it "returns an array of the most accurate results", ->
     candidates = ['Gruntfile','filter', 'bile', null, '', undefined]
-    expect(filter(candidates, 'file')).toEqual ['filter', 'Gruntfile']
+    expect(filter(candidates, 'file')).toEqual ['Gruntfile', 'filter']
 
   describe "when the maxResults option is set", ->
     it "limits the results to the result size", ->
       candidates = ['Gruntfile', 'filter', 'bile']
-      expect(bestMatch(candidates, 'file')).toBe 'filter'
+      expect(bestMatch(candidates, 'file')).toBe 'Gruntfile'
 
   describe "when the entries contains slashes", ->
     it "weighs basename matches higher", ->
@@ -111,6 +111,11 @@ describe "filtering", ->
     expect(bestMatch(['a_b_c', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['z_a_b', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['a_b_c', 'c_a_b'], 'ab')).toBe 'a_b_c'
+    expect(bestMatch(['Unin-stall', 'dir1/dir2/dir3/Installation'], 'install')).toBe 'dir1/dir2/dir3/Installation'
+    expect(bestMatch(['Uninstall', 'dir/Install'], 'install')).toBe 'dir/Install'
+
+  it "weighs substring higher than individual characters", ->
+    expect(bestMatch(['a_b_c', 'somethingabc'], 'abc')).toBe 'somethingabc'
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->
