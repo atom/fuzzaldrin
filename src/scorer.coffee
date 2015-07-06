@@ -50,17 +50,18 @@ exports.score = (string, query) ->
 
   bonus = 0
   substringIndex = string.indexOf(query)
-  substringIndexi = string.toUpperCase().indexOf(query.toUpperCase())
   if substringIndex > -1
     if substringIndex == 0 or string[substringIndex - 1] is PathSeparator
       bonus = 1.9
     else
       bonus = 1
-  if substringIndexi > -1
-    if substringIndexi == 0 or string[substringIndexi - 1] is PathSeparator
-      bonus = 1.6
-    else
-      bonus = 0.7
+  else
+    substringIndexi = string.toUpperCase().indexOf(query.toUpperCase())
+    if substringIndexi > -1
+      if substringIndexi == 0 or string[substringIndexi - 1] is PathSeparator
+        bonus = 1.6
+      else
+        bonus = 0.7
 
   totalCharacterScore = 0
 

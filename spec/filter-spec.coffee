@@ -115,6 +115,13 @@ describe "filtering", ->
     expect(bestMatch(['Uninstall', 'dir' + path.sep + 'Install'], 'install')).toBe 'dir' + path.sep + 'Install'
 
   it "weighs substring higher than individual characters", ->
+    candidates = [
+      'Git Plus: Stage Hunk',
+      'Git Plus: Reset Head',
+      'Git Plus: Push',
+      'Git Plus: Show'
+    ]
+    expect(bestMatch(candidates, 'push')).toBe 'Git Plus: Push'
     expect(bestMatch(['a_b_c', 'somethingabc'], 'abc')).toBe 'somethingabc'
 
   describe "when the entries are of differing directory depths", ->
