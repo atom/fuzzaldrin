@@ -111,8 +111,8 @@ describe "filtering", ->
     expect(bestMatch(['a_b_c', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['z_a_b', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['a_b_c', 'c_a_b'], 'ab')).toBe 'a_b_c'
-    expect(bestMatch(['Unin-stall', 'dir1' + path.sep + 'dir2' + path.sep + 'dir3' + path.sep + 'Installation'], 'install')).toBe 'dir1' + path.sep + 'dir2' + path.sep + 'dir3' + path.sep + 'Installation'
-    expect(bestMatch(['Uninstall', 'dir' + path.sep + 'Install'], 'install')).toBe 'dir' + path.sep + 'Install'
+    expect(bestMatch(['Unin-stall', path.join('dir1', 'dir2', 'dir3', 'Installation')], 'install')).toBe path.join('dir1', 'dir2', 'dir3', 'Installation')
+    expect(bestMatch(['Uninstall', path.join('dir', 'Install')], 'install')).toBe path.join('dir', 'Install')
 
   it "weighs substring higher than individual characters", ->
     candidates = [
