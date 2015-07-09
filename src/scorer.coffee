@@ -28,24 +28,19 @@ wex = 10  # bonus per character of an exact match. If exact coincide with prefix
 #Note: separator are likely to trigger both a
 # "acronym" and "proper case" bonus in addition of their own bonus.
 
-
 separators = ' .-_/\\'
 PathSeparator = require('path').sep
 
-separator_map = ->
-  sep_map = {}
-  k = -1
-  while ++k < separators.length
-    sep_map[separators[k]] = k
+# Optional chars
+# Some of query char MUST be in subject others are only nice to have.
+# For example space can be skipped in favor of a slash.
+opt_char_re = /[^a-zA-Z0-9\.\/\\]/g
 
-  sep_map
-
-sep_map = separator_map()
+#
+# Main scoring algorithm
+#
 
 exports.score = score = (subject, query, ignore) ->
-
-  #bypass isMatch will allow inexact match, but will be slower
-  return 0 if !( subject and query and isMatch(query, subject) )
 
   m = query.length + 1
   n = subject.length + 1
@@ -82,7 +77,7 @@ exports.score = score = (subject, query, ignore) ->
       # Score the options
       gapA = gapArow[j] = Math.max(gapArow[j] + we, vrow[j] + wo)
       gapB = Math.max(gapB + we, vrow[j - 1] + wo)
-      align = vd + char_score(query, subject, i - 1, j - 1)
+      align = vd + scoreChar(query, subject, i - 1, j - 1)
       vd = vrow[j]
 
       #Get the best option
@@ -99,7 +94,6 @@ exports.score = score = (subject, query, ignore) ->
   #console.log(query,subject)
   #console.table(VV);
 
-
   #haystack penalty
   vmax = Math.max(vmax / 2, vmax + wh * (n - m))
 
@@ -113,7 +107,7 @@ exports.score = score = (subject, query, ignore) ->
 
   return vmax
 
-char_score = (query, subject, i, j) ->
+scoreChar = (query, subject, i, j) ->
   qi = query[i]
   sj = subject[j]
 
@@ -148,8 +142,20 @@ char_score = (query, subject, i, j) ->
   #No match, best move will be to take a gap in either query or subject.
   return -Infinity
 
+#
+# filer query until we only get essential char
+#
 
-isMatch = (query, subject) ->
+exports.coreChars = coreChars = (query) ->
+  return query.replace(opt_char_re,'')
+
+
+#
+# yes/no: is all characters of query in subject, in proper order
+#
+
+exports.isMatch = isMatch = (subject, query) ->
+
   m = query.length
   n = subject.length
 
@@ -176,7 +182,11 @@ isMatch = (query, subject) ->
         return false
 
 
-  true
+  return true
+
+#
+# Score adjustment for path
+#
 
 exports.basenameScore = (string, query, score) ->
 
@@ -188,31 +198,20 @@ exports.basenameScore = (string, query, score) ->
   baseScore = if (basePos == -1) then score else Math.max(score, exports.score(string.substring(basePos + 1, end+1), query))
   score = 0.15*score + 0.85*baseScore
 
-  score
-
- ###
-
-  slashCount = 0
-  baseScore = 0
-  lastCharacter = index
-  base = null
-  while index >= 0
-    if string[index] is PathSeparator
-      slashCount++
-      base ?= string.substring(index + 1, lastCharacter + 1)
-    else if index is 0
-      if lastCharacter < string.length - 1
-        base ?= string.substring(0, lastCharacter + 1)
-      else
-        base ?= string
-    index--
-
-   # Shallow files are scored higher
-   score += baseScore*( 3.0 + 3.0/(3.0+slashCount) )
-
- ###
+  return score
 
 
+#
+# Build a hashmap of separator
+#
 
+separator_map = ->
+  sep_map = {}
+  k = -1
+  while ++k < separators.length
+    sep_map[separators[k]] = k
 
+  return sep_map
 
+# save hashmap in current closure
+sep_map = separator_map()

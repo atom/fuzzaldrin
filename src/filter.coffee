@@ -7,9 +7,11 @@ sortCandidates = (a, b) -> b.score - a.score
 module.exports = (candidates, query, queryHasSlashes, {key, maxResults}={}) ->
   if query
     scoredCandidates = []
+    coreQuery = scorer.coreChars(query)
+
     for candidate in candidates
       string = if key? then candidate[key] else candidate
-      continue unless string
+      continue unless string and scorer.isMatch(string,coreQuery)
       score = scorer.score(string, query, queryHasSlashes)
       unless queryHasSlashes
         score = scorer.basenameScore(string, query, score)

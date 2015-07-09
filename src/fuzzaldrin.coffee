@@ -3,22 +3,22 @@ filter = require './filter'
 matcher = require './matcher'
 
 PathSeparator = require('path').sep
-SpaceRegex = /\ /g
+#SpaceRegex = /\ /g
 
 module.exports =
   filter: (candidates, query, options) ->
     if query
       queryHasSlashes = query.indexOf(PathSeparator) isnt -1
-      query = query.replace(SpaceRegex, '')
+      #query = query.replace(SpaceRegex, '')
     filter(candidates, query, queryHasSlashes, options)
 
   score: (string, query) ->
     return 0 unless string
     return 0 unless query
-    return 2 if string is query
+    #return 2 if string is query
 
     queryHasSlashes = query.indexOf(PathSeparator) isnt -1
-    query = query.replace(SpaceRegex, '')
+    #query = query.replace(SpaceRegex, '')
     score = scorer.score(string, query)
     score = scorer.basenameScore(string, query, score) unless queryHasSlashes
     score
@@ -29,7 +29,7 @@ module.exports =
     return [0...string.length] if string is query
 
     queryHasSlashes = query.indexOf(PathSeparator) isnt -1
-    query = query.replace(SpaceRegex, '')
+    #query = query.replace(SpaceRegex, '')
     matches = matcher.match(string, query)
     unless queryHasSlashes
       baseMatches = matcher.basenameMatch(string, query)
