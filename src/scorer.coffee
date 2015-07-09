@@ -13,16 +13,18 @@
 
 
 wm = 10 # base score of making a match
-ws = 30 # bonus of making a separator match
-wa = 20 # bonus of making an acronym match
 wc = 10 # bonus for proper case
 
-wo = -8 # penalty to open a gap
-we = -2 # penalty to continue an open gap (inside a match)
+wa = 20 # bonus of making an acronym match
+ws = 20 # bonus of making a separator match
+
+wo = -8   # penalty to open a gap
+we = -2   # penalty to continue an open gap (inside a match)
 wh = -0.1 # penalty for haystack size (outside match)
 
-wst = 20  # penalty for match near start of string
-fst = 0.5 # (fade fst per position until 0)
+wst = 5   # penalty for match near start of string
+fst = 0.1 # (fade fst per position until 0)
+
 wex = 10  # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
 
 #Note: separator are likely to trigger both a
@@ -32,9 +34,17 @@ separators = ' .-_/\\'
 PathSeparator = require('path').sep
 
 # Optional chars
-# Some of query char MUST be in subject others are only nice to have.
-# For example space can be skipped in favor of a slash.
-opt_char_re = /[^a-zA-Z0-9\.\/\\]/g
+# Some characters of query char MUST be in subject,
+# Others COULD be there or not, better Score if they are, but not blocking isMatch.
+#
+# For example:
+# - space can be skipped in favor of a slash.
+# - separator could be interchanged, like in slug "-" "_" " "
+# - accents could be found by their base char "é" -> "e"
+# (Listed accents are: "ãàáäâæ?èéëêìíïîõòóöôœùúüûñç")
+#
+
+opt_char_re = /[\ \-\_\xE3\xE0\xE1\xE4\xE2\xE6\u1EBD\xE8\xE9\xEB\xEA\xEC\xED\xEF\xEE\xF5\xF2\xF3\xF6\xF4\u0153\xF9\xFA\xFC\xFB\xF1\xE7]/g
 
 #
 # Main scoring algorithm
@@ -97,12 +107,19 @@ exports.score = score = (subject, query, ignore) ->
   #haystack penalty
   vmax = Math.max(vmax / 2, vmax + wh * (n - m))
 
+  #last position, the +1s cancel out
+  lpos = m-n-1
+
   #sustring bonus, start of string bonus
   if ( p = subject.toLowerCase().indexOf(query.toLowerCase())) > -1
     vmax += wex * m * (1.0 + 1.0 / (1.0 + p))
 
-    #sustring happens right after a separator (double wex bonus)
+    #sustring happens right after a separator (prefix)
     if (p==0 or subject[p-1] of sep_map)
+      vmax += wex*m
+
+    #sustring happens right before a separator (suffix)
+    if (p==lpos or subject[p+1] of sep_map)
       vmax += wex*m
 
   return vmax

@@ -115,31 +115,22 @@ describe "filtering", ->
     expect(bestMatch(['Unin-stall', path.join('dir1', 'dir2', 'dir3', 'Installation')], 'install')).toBe path.join('dir1', 'dir2', 'dir3', 'Installation')
     expect(bestMatch(['Uninstall', path.join('dir', 'Install')], 'install')).toBe path.join('dir', 'Install')
 
-  it "weighs substring higher than individual characters", ->
+  it "weighs CamelCase matches higher", ->
     candidates = [
-      'Git Plus: Stage Hunk',
-      'Git Plus: Reset Head',
-      'Git Plus: Push',
-      'Git Plus: Show'
+      'FilterFactors.js',
+      'FilterFactors.styl',
+      'FilterFactors.html',
+      'FilterFactorTests.html',
+      'SpecFilterFactors.js'
     ]
-    expect(bestMatch(candidates, 'push')).toBe 'Git Plus: Push'
-    expect(bestMatch(['a_b_c', 'somethingabc'], 'abc')).toBe 'somethingabc'
+    expect(bestMatch(candidates, 'FFT')).toBe 'FilterFactorTests.html'
 
-  it "returns the result in order", ->
-    candidates = [
-      'Find And Replace: Selet All',
-      'Settings View: Uninstall Packages',
-      'Settings View: View Installed Themes',
-      'Application: Install Update',
-      'install'
-    ]
-    result = filter(candidates, 'install')
-    expect(result[0]).toBe candidates[4]
-    expect(result[1]).toBe candidates[3]
-    expect(result[2]).toBe candidates[2]
-    expect(result[3]).toBe candidates[1]
-    expect(result[4]).toBe candidates[0]
+    # expect(bestMatch(candidates, 'fft')).toBe 'FilterFactorTests.html'
 
+    # lowecase fft is in conflict with
+    #    expect(bestMatch(candidates, 'statusurl')).toBe 'statusurl'
+    # because that expectation reject an acronym match to favor matching same case.
+    # (still a possibility to go around it by detecting fft is nothing but acronym)
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->
@@ -166,3 +157,31 @@ describe "filtering", ->
         path.join('spec', 'cars.rb')
       ]
       expect(bestMatch(candidates, 'car.rb')).toBe candidates[0]
+
+
+  describe "When multiple result can match", ->
+
+    it "returns the result in order", ->
+      candidates = [
+        'Find And Replace: Selet All',
+        'Settings View: Uninstall Packages',
+        'Settings View: View Installed Themes',
+        'Application: Install Update',
+        'install'
+      ]
+      result = filter(candidates, 'install')
+      expect(result[0]).toBe candidates[4]
+      expect(result[1]).toBe candidates[3]
+      expect(result[2]).toBe candidates[2]
+      expect(result[3]).toBe candidates[1]
+      expect(result[4]).toBe candidates[0]
+
+    it "weighs substring higher than individual characters", ->
+    candidates = [
+      'Git Plus: Stage Hunk',
+      'Git Plus: Reset Head',
+      'Git Plus: Push',
+      'Git Plus: Show'
+    ]
+    expect(bestMatch(candidates, 'push')).toBe 'Git Plus: Push'
+    expect(bestMatch(['a_b_c', 'somethingabc'], 'abc')).toBe 'somethingabc'
