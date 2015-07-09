@@ -6,6 +6,7 @@ bestMatch = (candidates, query) ->
 
 rootPath = (segments...) ->
   joinedPath = if process.platform is 'win32' then 'C:\\' else '/'
+  # joinedPath = path.sep
   for segment in segments
     if segment is path.sep
       joinedPath += segment
@@ -128,14 +129,17 @@ describe "filtering", ->
     candidates = [
       'Find And Replace: Selet All',
       'Settings View: Uninstall Packages',
+      'Settings View: View Installed Themes',
       'Application: Install Update',
       'install'
     ]
     result = filter(candidates, 'install')
-    expect(result[0]).toBe candidates[3]
-    expect(result[1]).toBe candidates[2]
-    expect(result[2]).toBe candidates[1]
-    expect(result[3]).toBe candidates[0]
+    expect(result[0]).toBe candidates[4]
+    expect(result[1]).toBe candidates[3]
+    expect(result[2]).toBe candidates[2]
+    expect(result[3]).toBe candidates[1]
+    expect(result[4]).toBe candidates[0]
+
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->

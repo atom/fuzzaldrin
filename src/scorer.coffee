@@ -21,8 +21,9 @@ wo = -8 # penalty to open a gap
 we = -2 # penalty to continue an open gap (inside a match)
 wh = -0.1 # penalty for haystack size (outside match)
 
-wst = 20 # bonus for match near start of string  (fade one per position until 0)
-wex = 10 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
+wst = 20  # penalty for match near start of string
+fst = 0.5 # (fade fst per position until 0)
+wex = 10  # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
 
 #Note: separator are likely to trigger both a
 # "acronym" and "proper case" bonus in addition of their own bonus.
@@ -103,7 +104,12 @@ exports.score = score = (subject, query, ignore) ->
   vmax = Math.max(vmax / 2, vmax + wh * (n - m))
 
   #sustring bonus, start of string bonus
-  vmax += if (p = subject.toLowerCase().indexOf(query.toLowerCase())) > -1 then wex * m * (1.0 + 1.0 / (1.0 + p)) else 0
+  if ( p = subject.toLowerCase().indexOf(query.toLowerCase())) > -1
+    vmax += wex * m * (1.0 + 1.0 / (1.0 + p))
+
+    #sustring happens right after a separator (double wex bonus)
+    if (p==0 or subject[p-1] of sep_map)
+      vmax += wex*m
 
   return vmax
 
@@ -117,7 +123,7 @@ char_score = (query, subject, i, j) ->
     bonus = if qi == sj then wc else 0
 
     #start of string bonus
-    bonus += Math.max(wst - j, 0)
+    bonus += Math.max(wst - fst*j, 0)
 
     #match IS a separator
     if qi of sep_map
