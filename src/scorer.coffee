@@ -180,7 +180,7 @@ exports.basenameScore = (string, query, score) ->
 
   basePos = string.lastIndexOf(PathSeparator, end)
   baseScore = if (basePos == -1) then score else Math.max(score, exports.score(string.substring(basePos + 1, end+1), query))
-  score = 0.25*score + 0.75*baseScore
+  score = 0.15*score + 0.85*baseScore
 
   score
 
