@@ -175,8 +175,17 @@ isMatch = (query, subject) ->
 exports.basenameScore = (string, query, score) ->
 
   return 0 if score == 0
-  index = string.length - 1
-  index-- while string[index] is PathSeparator # Skip trailing slashes
+  end = string.length - 1
+  end-- while string[end] is PathSeparator # Skip trailing slashes
+
+  basePos = string.lastIndexOf(PathSeparator, end)
+  baseScore = if (basePos == -1) then score else Math.max(score, exports.score(string.substring(basePos + 1, end+1), query))
+  score = 0.25*score + 0.75*baseScore
+
+  score
+
+ ###
+
   slashCount = 0
   baseScore = 0
   lastCharacter = index
@@ -192,14 +201,12 @@ exports.basenameScore = (string, query, score) ->
         base ?= string
     index--
 
-  # Basename matches count for more, if improvement.
-  if base is string
-    baseScore = score
-  else if base
-    baseScore = Math.max(score, exports.score(base, query))
+   # Shallow files are scored higher
+   score += baseScore*( 3.0 + 3.0/(3.0+slashCount) )
 
-  # Shallow files are scored higher
-  score += baseScore*( 3.0 + 3.0/(3.0+slashCount) )
+ ###
 
-  score
+
+
+
 
