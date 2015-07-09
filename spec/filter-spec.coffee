@@ -16,12 +16,12 @@ rootPath = (segments...) ->
 describe "filtering", ->
   it "returns an array of the most accurate results", ->
     candidates = ['Gruntfile','filter', 'bile', null, '', undefined]
-    expect(filter(candidates, 'file')).toEqual ['filter', 'Gruntfile']
+    expect(filter(candidates, 'file')).toEqual ['Gruntfile', 'filter']
 
   describe "when the maxResults option is set", ->
     it "limits the results to the result size", ->
       candidates = ['Gruntfile', 'filter', 'bile']
-      expect(bestMatch(candidates, 'file')).toBe 'filter'
+      expect(bestMatch(candidates, 'file')).toBe 'Gruntfile'
 
   describe "when the entries contains slashes", ->
     it "weighs basename matches higher", ->
@@ -111,6 +111,31 @@ describe "filtering", ->
     expect(bestMatch(['a_b_c', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['z_a_b', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['a_b_c', 'c_a_b'], 'ab')).toBe 'a_b_c'
+    expect(bestMatch(['Unin-stall', path.join('dir1', 'dir2', 'dir3', 'Installation')], 'install')).toBe path.join('dir1', 'dir2', 'dir3', 'Installation')
+    expect(bestMatch(['Uninstall', path.join('dir', 'Install')], 'install')).toBe path.join('dir', 'Install')
+
+  it "weighs substring higher than individual characters", ->
+    candidates = [
+      'Git Plus: Stage Hunk',
+      'Git Plus: Reset Head',
+      'Git Plus: Push',
+      'Git Plus: Show'
+    ]
+    expect(bestMatch(candidates, 'push')).toBe 'Git Plus: Push'
+    expect(bestMatch(['a_b_c', 'somethingabc'], 'abc')).toBe 'somethingabc'
+
+  it "returns the result in order", ->
+    candidates = [
+      'Find And Replace: Selet All',
+      'Settings View: Uninstall Packages',
+      'Application: Install Update',
+      'install'
+    ]
+    result = filter(candidates, 'install')
+    expect(result[0]).toBe candidates[3]
+    expect(result[1]).toBe candidates[2]
+    expect(result[2]).toBe candidates[1]
+    expect(result[3]).toBe candidates[0]
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->
