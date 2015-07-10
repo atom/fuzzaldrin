@@ -31,6 +31,22 @@ wex = 20 # bonus per character of an exact match. If exact coincide with prefix,
 separators = ' .-_/\\'
 PathSeparator = require('path').sep
 
+#
+# Build a hashmap of separator
+#
+
+separator_map = ->
+  sep_map = {}
+  k = -1
+  while ++k < separators.length
+    sep_map[separators[k]] = k
+
+  return sep_map
+
+# save hashmap in current closure
+sep_map = separator_map()
+
+
 # Optional chars
 # Some characters of query char MUST be in subject,
 # Others COULD be there or not, better Score if they are, but not blocking isMatch.
@@ -40,14 +56,13 @@ PathSeparator = require('path').sep
 # - space like separator like in slug "-" "_" " "
 #
 
-opt_char_re = /[\ \-\_]/g
+opt_char_re = /[ \-\_]/g
 
 #
 # Main scoring algorithm
 #
 
 exports.score = score = (subject, query, ignore) ->
-
   m = query.length + 1
   n = subject.length + 1
 
@@ -80,18 +95,18 @@ exports.score = score = (subject, query, ignore) ->
       # Score the options
       gapA = gapArow[j] = Math.max(gapArow[j] + we, vrow[j] + wo)
       gapB = Math.max(gapB + we, vrow[j - 1] + wo)
-      align = if ( query_lw[i-1] == subject_lw[j-1] ) then vd + scoreMatchingChar(query, subject, i - 1, j - 1) else -Infinity
+      align = if ( query_lw[i - 1] == subject_lw[j - 1] ) then vd + scoreMatchingChar(query, subject, i - 1, j - 1) else 0
       vd = vrow[j]
 
-      #Get the best option
-      v = vrow[j] = Math.max(align, gapA, gapB, 0)
+      #Get the best option (align set the lower-bound to 0)
+      v = vrow[j] = Math.max(align, gapA, gapB)
 
       #Record best score
       if v > vmax
         vmax = v
 
   #haystack penalty
-  vmax = Math.max(vmax / 2, vmax + wh * (n - m))
+  vmax = Math.max(0.5 * vmax, vmax + wh * (n - m))
 
   #last position, the +1s cancel out
   lpos = m - n - 1
@@ -115,7 +130,6 @@ exports.score = score = (subject, query, ignore) ->
 #
 
 scoreMatchingChar = (query, subject, i, j) ->
-
   qi = query[i]
   sj = subject[j]
 
@@ -126,8 +140,7 @@ scoreMatchingChar = (query, subject, i, j) ->
   bonus += Math.floor(wst * 10.0 / (10.0 + i + j))
 
   #match IS a separator
-  if qi of sep_map
-    return ws + bonus
+  return ws + bonus if qi of sep_map
 
   #match is first char ( place a virtual token separator before first char of string)
   return wa + bonus if ( j == 0 or i == 0)
@@ -235,21 +248,4 @@ countDir = (path, end) ->
   # b) suppress next char: "./" is current folder
   # c) normal char ".git/"
 
-
   return count
-
-
-#
-# Build a hashmap of separator
-#
-
-separator_map = ->
-  sep_map = {}
-  k = -1
-  while ++k < separators.length
-    sep_map[separators[k]] = k
-
-  return sep_map
-
-# save hashmap in current closure
-sep_map = separator_map()
