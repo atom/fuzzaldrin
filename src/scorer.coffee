@@ -108,8 +108,10 @@ exports.score = score = (subject, query, ignore) ->
   #haystack penalty
   vmax = Math.max(0.5 * vmax, vmax + wh * (n - m))
 
-  #last position, the +1s cancel out
-  lpos = m - n - 1
+  # last position, the +1s cancel out
+  # for both the "length=<last index>+1" and the buffer=length+1
+  # also m is query, so smallest of both number
+  lpos = n - m
 
   #sustring bonus, start of string bonus
   if ( p = subject_lw.indexOf(query_lw)) > -1
