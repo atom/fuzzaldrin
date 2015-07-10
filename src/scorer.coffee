@@ -107,7 +107,7 @@ exports.score = score = (subject, query, ignore) ->
 
   #test for camelCase
   p = camelPrefix(subject, subject_lw, query, query_lw)
-  exact += 2*wex*p
+  exact += 3*wex*p
 
   #Whole query is camelCase abbreviation ?
   if(p==query.length)

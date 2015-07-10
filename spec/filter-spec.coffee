@@ -156,6 +156,15 @@ describe "filtering", ->
     expect(bestMatch(candidates, 'FFT')).toBe 'FilterFactorTests.html'
     expect(bestMatch(candidates, 'fft')).toBe 'FilterFactorTests.html'
 
+  it "account for case in CamelCase vs Substring matches", ->
+
+    candidates = [
+      'CamelCaseClass.js',
+      'cccManager.java'
+    ]
+    expect(bestMatch(candidates, 'CCC')).toBe candidates[0]
+    expect(bestMatch(candidates, 'ccc')).toBe candidates[1]
+
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->
