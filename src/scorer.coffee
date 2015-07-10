@@ -307,11 +307,11 @@ exports.basenameScore = (string, query, score) ->
   return score if (basePos == -1)
 
   # Get baseScore bonus
-  baseScore = Math.max(score, exports.score(string.substring(basePos + 1, end + 1), query))
+  baseScore = exports.score(string.substring(basePos + 1, end + 1), query)
 
   # We'll merge some of that bonus with full path score.
   # Importance of bonus fade with directory depth until it reach 50/50
-  alpha = 0.5 + 2.5 / ( 5.0 + countDir(string, end + 1) )
+  alpha = 2.5 / ( 5.0 + countDir(string, end + 1) )
   score = alpha * baseScore + (1 - alpha) * score
 
   return score
