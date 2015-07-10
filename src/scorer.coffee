@@ -23,7 +23,7 @@ we = -2 # penalty to continue an open gap (inside a match)
 wh = -0.1 # penalty for haystack size (outside match)
 
 wst = 15 # bonus for match near start of string
-wex = 20 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
+wex = 60 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
 
 #Note: separator are likely to trigger both a
 # "acronym" and "proper case" bonus in addition of their own bonus.
@@ -68,6 +68,36 @@ exports.score = score = (subject, query, ignore) ->
 
   subject_lw = subject.toLowerCase()
   query_lw = query.toLowerCase()
+  exact = 0
+
+  #Exact Match => bypass (if case sensitive match)
+  if ( p = subject_lw.indexOf(query_lw)) > -1
+
+    base = wex * m
+
+    #base bonus + position decay
+    exact = base * (1.0 + 3.0 / (3.0 + p))
+
+    #sustring happens right after a separator (prefix)
+    if (p == 0 or subject[p - 1] of sep_map)
+      exact += 3*base
+
+    # last position, the +1s cancel out
+    # for both the "length=<last index>+1" and the buffer=length+1
+    # also m is query, so smallest of both number
+    lpos = n - m
+
+    #sustring happens right before a separator (suffix)
+    if (p == lpos or subject[p + 1] of sep_map)
+      exact += base
+
+    #substring is ExactCase
+    if(subject.indexOf(query) > -1)
+      exact += 2*base
+      return exact
+
+
+
 
   #Init
   vrow = new Array(n)
@@ -108,24 +138,8 @@ exports.score = score = (subject, query, ignore) ->
   #haystack penalty
   vmax = Math.max(0.5 * vmax, vmax + wh * (n - m))
 
-  # last position, the +1s cancel out
-  # for both the "length=<last index>+1" and the buffer=length+1
-  # also m is query, so smallest of both number
-  lpos = n - m
 
-  #sustring bonus, start of string bonus
-  if ( p = subject_lw.indexOf(query_lw)) > -1
-    vmax += wex * m * (1.0 + 5.0 / (5.0 + p))
-
-    #sustring happens right after a separator (prefix)
-    if (p == 0 or subject[p - 1] of sep_map)
-      vmax += wex * m
-
-    #sustring happens right before a separator (suffix)
-    if (p == lpos or subject[p + 1] of sep_map)
-      vmax += wex * m
-
-  return vmax
+  return vmax+exact
 
 #
 # Compute the bonuses for two chars that are confirmed to matches in a case-insensitive way
