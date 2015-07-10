@@ -112,7 +112,7 @@ exports.score = score = (subject, query, ignore) ->
   lpos = m - n - 1
 
   #sustring bonus, start of string bonus
-  if ( p = subject.toLowerCase().indexOf(query.toLowerCase())) > -1
+  if ( p = subject_lw.indexOf(query_lw)) > -1
     vmax += wex * m * (1.0 + 5.0 / (5.0 + p))
 
     #sustring happens right after a separator (prefix)
