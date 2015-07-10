@@ -37,20 +37,22 @@ PathSeparator = require('path').sep
 #
 # For example:
 # - space can be skipped in favor of a slash.
-# - separator could be interchanged, like in slug "-" "_" " "
-# - accents could be found by their base char "é" -> "e"
-# (Listed accents are: "ãàáäâæ?èéëêìíïîõòóöôœùúüûñç")
+# - space like separator like in slug "-" "_" " "
 #
 
-opt_char_re = /[\ \-\_\xE3\xE0\xE1\xE4\xE2\xE6\u1EBD\xE8\xE9\xEB\xEA\xEC\xED\xEF\xEE\xF5\xF2\xF3\xF6\xF4\u0153\xF9\xFA\xFC\xFB\xF1\xE7]/g
+opt_char_re = /[\ \-\_]/g
 
 #
 # Main scoring algorithm
 #
 
 exports.score = score = (subject, query, ignore) ->
+
   m = query.length + 1
   n = subject.length + 1
+
+  subject_lw = subject.toLowerCase()
+  query_lw = query.toLowerCase()
 
   #Init
   vrow = new Array(n)
@@ -78,7 +80,7 @@ exports.score = score = (subject, query, ignore) ->
       # Score the options
       gapA = gapArow[j] = Math.max(gapArow[j] + we, vrow[j] + wo)
       gapB = Math.max(gapB + we, vrow[j - 1] + wo)
-      align = vd + scoreChar(query, subject, i - 1, j - 1)
+      align = if ( query_lw[i-1] == subject_lw[j-1] ) then vd + scoreMatchingChar(query, subject, i - 1, j - 1) else -Infinity
       vd = vrow[j]
 
       #Get the best option
@@ -108,40 +110,41 @@ exports.score = score = (subject, query, ignore) ->
 
   return vmax
 
-scoreChar = (query, subject, i, j) ->
+#
+# Compute the bonuses for two chars that are confirmed to matches in a case-insensitive way
+#
+
+scoreMatchingChar = (query, subject, i, j) ->
+
   qi = query[i]
   sj = subject[j]
 
-  if qi.toLowerCase() == sj.toLowerCase()
+  #Proper casing bonus
+  bonus = if qi == sj then wc else 0
 
-    #Proper casing bonus
-    bonus = if qi == sj then wc else 0
+  #start of string bonus
+  bonus += Math.floor(wst * 10.0 / (10.0 + i + j))
 
-    #start of string bonus
-    bonus += Math.floor(wst * 10.0 / (10.0 + i + j))
+  #match IS a separator
+  if qi of sep_map
+    return ws + bonus
 
-    #match IS a separator
-    if qi of sep_map
-      return ws + bonus
+  #match is first char ( place a virtual token separator before first char of string)
+  return wa + bonus if ( j == 0 or i == 0)
 
-    #match is first char ( place a virtual token separator before first char of string)
-    return wa + bonus if ( j == 0 or i == 0)
+  #get previous char
+  prev_s = subject[j - 1]
+  prev_q = query[i - 1]
 
-    #get previous char
-    prev_s = subject[j - 1]
-    prev_q = query[i - 1]
+  #match FOLLOW a separator
+  return wa + bonus if ( prev_s of sep_map) or ( prev_q of sep_map )
 
-    #match FOLLOW a separator
-    return wa + bonus if ( prev_s of sep_map) or ( prev_q of sep_map )
+  #match IS Capital in camelCase (preceded by lowercase)
+  return wa + bonus if (sj == sj.toUpperCase() and prev_s == prev_s.toLowerCase())
 
-    #match IS Capital in camelCase (preceded by lowercase)
-    return wa + bonus if (sj == sj.toUpperCase() and prev_s == prev_s.toLowerCase())
+  #normal Match, add proper case bonus
+  return wm + bonus
 
-    #normal Match, add proper case bonus
-    return wm + bonus
-
-  #No match, best move will be to take a gap in either query or subject.
-  return -Infinity
 
 #
 # filer query until we only get essential char
