@@ -154,6 +154,8 @@ describe "filtering", ->
       'SpecFilterFactors.js'
     ]
     expect(bestMatch(candidates, 'FFT')).toBe 'FilterFactorTests.html'
+    expect(bestMatch(candidates, 'fft')).toBe 'FilterFactorTests.html'
+
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->

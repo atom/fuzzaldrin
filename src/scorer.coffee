@@ -15,7 +15,7 @@
 wm = 10 # base score of making a match
 wc = 10 # bonus for proper case
 
-wa = 20 # bonus of making an acronym match
+wa = 40 # bonus of making an acronym match
 ws = 20 # bonus of making a separator match
 
 wo = -10 # penalty to open a gap
@@ -91,13 +91,27 @@ exports.score = score = (subject, query, ignore) ->
     if (p == lpos or subject[p + 1] of sep_map)
       exact += base
 
-    #substring is ExactCase
     if(subject.indexOf(query) > -1)
+      #substring is ExactCase
       exact += 2*base
-      return exact
+    else
+      #test for camelCase
+      p = camelPrefix(subject, subject_lw, query, query_lw)
+      exact += 2*wex*p
+
+    #haystack penalty
+    exact = Math.max(0.5 * exact, exact + wh * (n - m))
+
+    return exact
 
 
+  #test for camelCase
+  p = camelPrefix(subject, subject_lw, query, query_lw)
+  exact += 2*wex*p
 
+  #Whole query is camelCase abbreviation ?
+  if(p==query.length)
+    return exact
 
   #Init
   vrow = new Array(n)
@@ -158,7 +172,7 @@ scoreMatchingChar = (query, subject, i, j) ->
   #match IS a separator
   return ws + bonus if qi of sep_map
 
-  #match is first char ( place a virtual token separator before first char of string)
+  #match is FIRST char ( place a virtual token separator before first char of string)
   return wa + bonus if ( j == 0 or i == 0)
 
   #get previous char
@@ -168,11 +182,52 @@ scoreMatchingChar = (query, subject, i, j) ->
   #match FOLLOW a separator
   return wa + bonus if ( prev_s of sep_map) or ( prev_q of sep_map )
 
-  #match IS Capital in camelCase (preceded by lowercase)
+  #match is Capital in camelCase (preceded by lowercase)
   return wa + bonus if (sj == sj.toUpperCase() and prev_s == prev_s.toLowerCase())
 
   #normal Match, add proper case bonus
   return wm + bonus
+
+
+#
+# Count the number of camelCase prefix
+# (Modified isMatch)
+#
+
+camelPrefix = (subject, subject_lw, query, query_lw) ->
+
+  m = query_lw.length
+  n = subject_lw.length
+  count = 0
+
+  i = -1
+  j = -1
+  k = n - 1
+
+  while ++i < m
+
+    qi_lw = query_lw[i]
+
+    while ++j < n
+
+      sj = subject[j]
+      sj_lw = subject_lw[j]
+
+      #Lowecase, continue
+      if(sj == sj_lw) then continue
+
+      #Subject Uppercase, is it a match ?
+      else if( qi_lw == sj_lw )
+        #Is Query Uppercase too ?
+        qi = query[i]
+        count += if( qi == qi.toUpperCase() ) then 2 else 1
+        break
+
+      #End of subject
+      else if j == k then return count
+
+  #end of query
+  return count
 
 
 #
