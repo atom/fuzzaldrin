@@ -165,6 +165,31 @@ describe "filtering", ->
     expect(bestMatch(candidates, 'CCC')).toBe candidates[0]
     expect(bestMatch(candidates, 'ccc')).toBe candidates[1]
 
+  it "prefer CamelCase that happens sooner", ->
+
+    candidates = [
+      'anotherCamelCase',
+      'thisCamelCase000',
+    ]
+    expect(bestMatch(candidates, 'CC')).toBe candidates[1]
+
+  it "prefer CamelCase in shorter haystack", ->
+
+    candidates = [
+      'CamelCase0',
+      'CamelCase',
+    ]
+    expect(bestMatch(candidates, 'CC')).toBe candidates[1]
+
+  it "prefer uninterrupted sequence CamelCase", ->
+
+    candidates = [
+      'CamelSkippedCase',
+      'CamelCaseSkipped',
+    ]
+    expect(bestMatch(candidates, 'CC')).toBe candidates[1]
+
+
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->

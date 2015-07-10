@@ -20,10 +20,22 @@ ws = 20 # bonus of making a separator match
 
 wo = -10 # penalty to open a gap
 we = -2 # penalty to continue an open gap (inside a match)
-wh = -0.1 # penalty for haystack size (outside match)
 
 wst = 15 # bonus for match near start of string
 wex = 60 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
+
+#
+# Fading function
+#
+# f(x) = tau / ( tau + x) will be used for bonus that fade with position
+# it'll also be used to penalize larger haystack.
+#
+# f(0) = 1, f(half_score) = 0.5
+# tau / ( tau + half_score) = 0.5
+# tau / ( tau + tau) = 0.5 => tau = half_score
+
+tau = 10
+
 
 #Note: separator are likely to trigger both a
 # "acronym" and "proper case" bonus in addition of their own bonus.
@@ -56,7 +68,7 @@ sep_map = separator_map()
 # - space like separator like in slug "-" "_" " "
 #
 
-opt_char_re = /[ \-\_]/g
+opt_char_re = /[ _\-]/g
 
 #
 # Main scoring algorithm
@@ -68,7 +80,9 @@ exports.score = score = (subject, query, ignore) ->
 
   subject_lw = subject.toLowerCase()
   query_lw = query.toLowerCase()
-  exact = 0
+
+  #haystack size penalty
+  sz = 2*tau / (2*tau + n)
 
   #Exact Match => bypass (if case sensitive match)
   if ( p = subject_lw.indexOf(query_lw)) > -1
@@ -76,15 +90,14 @@ exports.score = score = (subject, query, ignore) ->
     base = wex * m
 
     #base bonus + position decay
-    exact = base * (1.0 + 3.0 / (3.0 + p))
+    exact = base * (1.0 + tau / (tau + p))
 
     #sustring happens right after a separator (prefix)
     if (p == 0 or subject[p - 1] of sep_map)
-      exact += 3*base
+      exact += 3 * base
 
     # last position, the +1s cancel out
     # for both the "length=<last index>+1" and the buffer=length+1
-    # also m is query, so smallest of both number
     lpos = n - m
 
     #sustring happens right before a separator (suffix)
@@ -93,24 +106,22 @@ exports.score = score = (subject, query, ignore) ->
 
     if(subject.indexOf(query) > -1)
       #substring is ExactCase
-      exact += 2*base
+      exact += 2 * base
+
     else
       #test for camelCase
-      p = camelPrefix(subject, subject_lw, query, query_lw)
-      exact += 2*wex*p
+      camel = camelPrefix(subject, subject_lw, query, query_lw)
+      exact += 1.5 * wex * camel[0] * (1.0 + tau / (tau + camel[1]))
 
-    #haystack penalty
-    exact = Math.max(0.5 * exact, exact + wh * (n - m))
-
-    return exact
+    return exact * sz
 
 
-  #test for camelCase
-  p = camelPrefix(subject, subject_lw, query, query_lw)
-  exact += 3*wex*p
+  #test for camelCase (no exact substring)
+  camel = camelPrefix(subject, subject_lw, query, query_lw)
+  exact = 2 * wex * camel[0] * (1.0 + tau / (tau + camel[1]))
 
   #Whole query is camelCase abbreviation ?
-  if(p==query.length)
+  if(camel[0] == query.length)
     return exact
 
   #Init
@@ -136,7 +147,7 @@ exports.score = score = (subject, query, ignore) ->
     while ++j < n
       #foreach char of subject
 
-      # Score the options
+      # exact the options
       gapA = gapArow[j] = Math.max(gapArow[j] + we, vrow[j] + wo)
       gapB = Math.max(gapB + we, vrow[j - 1] + wo)
       align = if ( query_lw[i - 1] == subject_lw[j - 1] ) then vd + scoreMatchingChar(query, subject, i - 1, j - 1) else 0
@@ -145,21 +156,19 @@ exports.score = score = (subject, query, ignore) ->
       #Get the best option (align set the lower-bound to 0)
       v = vrow[j] = Math.max(align, gapA, gapB)
 
-      #Record best score
+      #Record best exact
       if v > vmax
         vmax = v
 
-  #haystack penalty
-  vmax = Math.max(0.5 * vmax, vmax + wh * (n - m))
 
-
-  return vmax+exact
+  return (vmax + exact) * sz
 
 #
 # Compute the bonuses for two chars that are confirmed to matches in a case-insensitive way
 #
 
 scoreMatchingChar = (query, subject, i, j) ->
+
   qi = query[i]
   sj = subject[j]
 
@@ -198,7 +207,9 @@ camelPrefix = (subject, subject_lw, query, query_lw) ->
 
   m = query_lw.length
   n = subject_lw.length
+
   count = 0
+  first = 0 # report zero on non-match to fit the fade function
 
   i = -1
   j = -1
@@ -218,16 +229,26 @@ camelPrefix = (subject, subject_lw, query, query_lw) ->
 
       #Subject Uppercase, is it a match ?
       else if( qi_lw == sj_lw )
+
+        #record first match
+        first = j if count == 0
+
         #Is Query Uppercase too ?
         qi = query[i]
         count += if( qi == qi.toUpperCase() ) then 2 else 1
+
         break
 
       #End of subject
       else if j == k then return count
 
+      else
+        # Skipped a CamelCase candidate...
+        # Lower quality of the match by increasing first match pos
+        first+=2
+
   #end of query
-  return count
+  return [count, first]
 
 
 #
@@ -309,7 +330,8 @@ countDir = (path, end) ->
     p = path[i]
     if (p == PathSeparator)
       ++count
-      continue while ++i < end and path[i] == PathSeparator
+      while ++i < end and path[i] == PathSeparator
+        continue
 
     else if p == "." and ++i < end and path[i] == "." and ++i < end and path[i] == "/"
       --count
