@@ -18,14 +18,12 @@ wc = 10 # bonus for proper case
 wa = 20 # bonus of making an acronym match
 ws = 20 # bonus of making a separator match
 
-wo = -8   # penalty to open a gap
-we = -2   # penalty to continue an open gap (inside a match)
+wo = -10 # penalty to open a gap
+we = -2 # penalty to continue an open gap (inside a match)
 wh = -0.1 # penalty for haystack size (outside match)
 
-wst = 5   # penalty for match near start of string
-fst = 0.1 # (fade fst per position until 0)
-
-wex = 10  # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
+wst = 15 # bonus for match near start of string
+wex = 20 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
 
 #Note: separator are likely to trigger both a
 # "acronym" and "proper case" bonus in addition of their own bonus.
@@ -51,7 +49,6 @@ opt_char_re = /[\ \-\_\xE3\xE0\xE1\xE4\xE2\xE6\u1EBD\xE8\xE9\xEB\xEA\xEC\xED\xEF
 #
 
 exports.score = score = (subject, query, ignore) ->
-
   m = query.length + 1
   n = subject.length + 1
 
@@ -61,9 +58,6 @@ exports.score = score = (subject, query, ignore) ->
   gapA = 0
   gapB = 0
   vmax = 0
-
-  #DEBUG
-  #VV = []
 
   #Fill with 0
   j = -1
@@ -76,9 +70,6 @@ exports.score = score = (subject, query, ignore) ->
     #foreach char of query
     gapB = 0
     vd = vrow[0]
-
-    #DEBUG
-    #VV[i] = []
 
     j = 0 #1..n-1
     while ++j < n
@@ -93,34 +84,27 @@ exports.score = score = (subject, query, ignore) ->
       #Get the best option
       v = vrow[j] = Math.max(align, gapA, gapB, 0)
 
-      #DEBUG
-      #VV[i][j] = v
-
       #Record best score
       if v > vmax
         vmax = v
-
-  #DEBUG
-  #console.log(query,subject)
-  #console.table(VV);
 
   #haystack penalty
   vmax = Math.max(vmax / 2, vmax + wh * (n - m))
 
   #last position, the +1s cancel out
-  lpos = m-n-1
+  lpos = m - n - 1
 
   #sustring bonus, start of string bonus
   if ( p = subject.toLowerCase().indexOf(query.toLowerCase())) > -1
-    vmax += wex * m * (1.0 + 1.0 / (1.0 + p))
+    vmax += wex * m * (1.0 + 5.0 / (5.0 + p))
 
     #sustring happens right after a separator (prefix)
-    if (p==0 or subject[p-1] of sep_map)
-      vmax += wex*m
+    if (p == 0 or subject[p - 1] of sep_map)
+      vmax += wex * m
 
     #sustring happens right before a separator (suffix)
-    if (p==lpos or subject[p+1] of sep_map)
-      vmax += wex*m
+    if (p == lpos or subject[p + 1] of sep_map)
+      vmax += wex * m
 
   return vmax
 
@@ -134,7 +118,7 @@ scoreChar = (query, subject, i, j) ->
     bonus = if qi == sj then wc else 0
 
     #start of string bonus
-    bonus += Math.max(wst - fst*j, 0)
+    bonus += Math.floor(wst * 10.0 / (10.0 + i + j))
 
     #match IS a separator
     if qi of sep_map
@@ -164,7 +148,7 @@ scoreChar = (query, subject, i, j) ->
 #
 
 exports.coreChars = coreChars = (query) ->
-  return query.replace(opt_char_re,'')
+  return query.replace(opt_char_re, '')
 
 
 #
@@ -172,7 +156,6 @@ exports.coreChars = coreChars = (query) ->
 #
 
 exports.isMatch = isMatch = (subject, query) ->
-
   m = query.length
   n = subject.length
 
@@ -206,16 +189,51 @@ exports.isMatch = isMatch = (subject, query) ->
 #
 
 exports.basenameScore = (string, query, score) ->
-
   return 0 if score == 0
   end = string.length - 1
   end-- while string[end] is PathSeparator # Skip trailing slashes
 
   basePos = string.lastIndexOf(PathSeparator, end)
-  baseScore = if (basePos == -1) then score else Math.max(score, exports.score(string.substring(basePos + 1, end+1), query))
-  score = 0.15*score + 0.85*baseScore
+
+  # No PathSeparator.. no special base to score
+  return score if (basePos == -1)
+
+  # Get baseScore bonus
+  baseScore = Math.max(score, exports.score(string.substring(basePos + 1, end + 1), query))
+
+  # We'll merge some of that bonus with full path score.
+  # Importance of bonus fade with directory depth until it reach 50/50
+  alpha = 0.5 + 2.5 / ( 5.0 + countDir(string, end + 1) )
+  score = alpha * baseScore + (1 - alpha) * score
 
   return score
+
+#
+# Count number of folder in a path.
+#
+
+countDir = (path, end) ->
+  return 0 if end < 1
+
+  count = 0
+  i = -1
+  while ++i < end
+
+    p = path[i]
+    if (p == PathSeparator)
+      ++count
+      continue while ++i < end and path[i] == PathSeparator
+
+    else if p == "." and ++i < end and path[i] == "." and ++i < end and path[i] == "/"
+      --count
+
+  # dot behavior:
+  # a) go back one folder in "../"
+  # b) suppress next char: "./" is current folder
+  # c) normal char ".git/"
+
+
+  return count
 
 
 #

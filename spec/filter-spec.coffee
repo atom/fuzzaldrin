@@ -6,7 +6,7 @@ bestMatch = (candidates, query) ->
 
 rootPath = (segments...) ->
   joinedPath = if process.platform is 'win32' then 'C:\\' else '/'
-  # joinedPath = path.sep
+  #joinedPath = path.sep
   for segment in segments
     if segment is path.sep
       joinedPath += segment
@@ -16,7 +16,7 @@ rootPath = (segments...) ->
 
 describe "filtering", ->
   it "returns an array of the most accurate results", ->
-    candidates = ['Gruntfile','filter', 'bile', null, '', undefined]
+    candidates = ['Gruntfile', 'filter', 'bile', null, '', undefined]
     expect(filter(candidates, 'file')).toEqual ['Gruntfile', 'filter']
 
   describe "when the maxResults option is set", ->
@@ -58,8 +58,37 @@ describe "filtering", ->
       ]
       expect(bestMatch(candidates, 'bar')).toBe candidates[1]
 
-      expect(bestMatch([path.join('f', 'o', '1_a_z'), path.join('f', 'o', 'a_z')], 'az')).toBe path.join('f', 'o', 'a_z')
+      expect(bestMatch([path.join('f', 'o', '1_a_z'), path.join('f', 'o', 'a_z')], 'az')).toBe path.join('f', 'o',
+        'a_z')
       expect(bestMatch([path.join('f', '1_a_z'), path.join('f', 'o', 'a_z')], 'az')).toBe path.join('f', 'o', 'a_z')
+
+    it "prefer shallow path", ->
+
+      candidate = [
+        path.join('b', 'z', 'file'),
+        path.join('b_z', 'file')
+      ]
+
+      expect(bestMatch(candidate, "file")).toBe candidate[1]
+      expect(bestMatch(candidate, "fle")).toBe candidate[1]
+
+      candidate = [
+        path.join('foo', 'bar', 'baz', 'file'),
+        path.join('foo', 'bar_baz', 'file')
+      ]
+
+      expect(bestMatch(candidate, "file")).toBe candidate[1]
+      expect(bestMatch(candidate, "fle")).toBe candidate[1]
+
+    it "allow to search structure", ->
+      candidate = [
+        path.join('base', 'file'),
+        path.join('bar', 'file')
+      ]
+
+      expect(bestMatch(candidate, "base file")).toBe candidate[0]
+      expect(bestMatch(candidate, "as fle")).toBe candidate[0]
+
 
   describe "when the candidate is all slashes", ->
     it "does not throw an exception", ->
@@ -112,7 +141,8 @@ describe "filtering", ->
     expect(bestMatch(['a_b_c', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['z_a_b', 'a_b'], 'ab')).toBe 'a_b'
     expect(bestMatch(['a_b_c', 'c_a_b'], 'ab')).toBe 'a_b_c'
-    expect(bestMatch(['Unin-stall', path.join('dir1', 'dir2', 'dir3', 'Installation')], 'install')).toBe path.join('dir1', 'dir2', 'dir3', 'Installation')
+    expect(bestMatch(['Unin-stall', path.join('dir1', 'dir2', 'dir3', 'Installation')],
+      'install')).toBe path.join('dir1', 'dir2', 'dir3', 'Installation')
     expect(bestMatch(['Uninstall', path.join('dir', 'Install')], 'install')).toBe path.join('dir', 'Install')
 
   it "weighs CamelCase matches higher", ->
@@ -124,13 +154,6 @@ describe "filtering", ->
       'SpecFilterFactors.js'
     ]
     expect(bestMatch(candidates, 'FFT')).toBe 'FilterFactorTests.html'
-
-    # expect(bestMatch(candidates, 'fft')).toBe 'FilterFactorTests.html'
-
-    # lowecase fft is in conflict with
-    #    expect(bestMatch(candidates, 'statusurl')).toBe 'statusurl'
-    # because that expectation reject an acronym match to favor matching same case.
-    # (still a possibility to go around it by detecting fft is nothing but acronym)
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->
@@ -158,9 +181,13 @@ describe "filtering", ->
       ]
       expect(bestMatch(candidates, 'car.rb')).toBe candidates[0]
 
+      candidates = [
+        path.join('test', 'components', 'core', 'application', 'applicationPageStateServiceSpec.js')
+        path.join('test', 'components', 'core', 'view', 'components', 'actions', 'actionsServiceSpec.js')
+      ]
+      expect(bestMatch(candidates, 'actionsServiceSpec.js')).toBe candidates[1]
 
   describe "When multiple result can match", ->
-
     it "returns the result in order", ->
       candidates = [
         'Find And Replace: Selet All',
