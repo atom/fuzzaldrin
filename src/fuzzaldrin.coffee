@@ -28,7 +28,7 @@ module.exports =
     matches = matcher.match(string, query)
     unless queryHasSlashes
       baseMatches = matcher.basenameMatch(string, query)
-      # Combine the results, removing dupicate indexes
+      # Combine the results, removing duplicate indexes
       matches = matches.concat(baseMatches).sort (a, b) -> a - b
       seen = null
       index = 0

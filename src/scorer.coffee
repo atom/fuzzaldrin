@@ -147,7 +147,7 @@ exports.score = score = (subject, query, ignore) ->
     while ++j < n
       #foreach char of subject
 
-      # exact the options
+      # score the options
       gapA = gapArow[j] = Math.max(gapArow[j] + we, vrow[j] + wo)
       gapB = Math.max(gapB + we, vrow[j - 1] + wo)
       align = if ( query_lw[i - 1] == subject_lw[j - 1] ) then vd + scoreMatchingChar(query, subject, i - 1, j - 1) else 0
@@ -156,7 +156,7 @@ exports.score = score = (subject, query, ignore) ->
       #Get the best option (align set the lower-bound to 0)
       v = vrow[j] = Math.max(align, gapA, gapB)
 
-      #Record best exact
+      #Record best score
       if v > vmax
         vmax = v
 
