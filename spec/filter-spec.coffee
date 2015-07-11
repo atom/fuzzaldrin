@@ -123,6 +123,7 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'table')).toBe candidates[1]
 
   describe "when the entries contains mixed case", ->
+
     it "weighs exact case matches higher", ->
       candidates = ['statusurl', 'StatusUrl']
       expect(bestMatch(candidates, 'Status')).toBe 'StatusUrl'
@@ -132,64 +133,86 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'statusurl')).toBe 'statusurl'
       expect(bestMatch(candidates, 'StatusUrl')).toBe 'StatusUrl'
 
-  it "weighs abbreviation matches after spaces, underscores, and dashes the same", ->
-    expect(bestMatch(['sub-zero', 'sub zero', 'sub_zero'], 'sz')).toBe 'sub-zero'
-    expect(bestMatch(['sub zero', 'sub_zero', 'sub-zero'], 'sz')).toBe 'sub zero'
-    expect(bestMatch(['sub_zero', 'sub-zero', 'sub zero'], 'sz')).toBe 'sub_zero'
-
-  it "weighs matches at the start of the string or base name higher", ->
-    expect(bestMatch(['a_b_c', 'a_b'], 'ab')).toBe 'a_b'
-    expect(bestMatch(['z_a_b', 'a_b'], 'ab')).toBe 'a_b'
-    expect(bestMatch(['a_b_c', 'c_a_b'], 'ab')).toBe 'a_b_c'
-    expect(bestMatch(['Unin-stall', path.join('dir1', 'dir2', 'dir3', 'Installation')],
-      'install')).toBe path.join('dir1', 'dir2', 'dir3', 'Installation')
-    expect(bestMatch(['Uninstall', path.join('dir', 'Install')], 'install')).toBe path.join('dir', 'Install')
-
-  it "weighs CamelCase matches higher", ->
-    candidates = [
-      'FilterFactors.js',
-      'FilterFactors.styl',
-      'FilterFactors.html',
-      'FilterFactorTests.html',
-      'SpecFilterFactors.js'
-    ]
-    expect(bestMatch(candidates, 'FFT')).toBe 'FilterFactorTests.html'
-    expect(bestMatch(candidates, 'fft')).toBe 'FilterFactorTests.html'
-
-  it "account for case in CamelCase vs Substring matches", ->
-
-    candidates = [
-      'CamelCaseClass.js',
-      'cccManager.java'
-    ]
-    expect(bestMatch(candidates, 'CCC')).toBe candidates[0]
-    expect(bestMatch(candidates, 'ccc')).toBe candidates[1]
-
-  it "prefer CamelCase that happens sooner", ->
-
-    candidates = [
-      'anotherCamelCase',
-      'thisCamelCase000',
-    ]
-    expect(bestMatch(candidates, 'CC')).toBe candidates[1]
-
-  it "prefer CamelCase in shorter haystack", ->
-
-    candidates = [
-      'CamelCase0',
-      'CamelCase',
-    ]
-    expect(bestMatch(candidates, 'CC')).toBe candidates[1]
-
-  it "prefer uninterrupted sequence CamelCase", ->
-
-    candidates = [
-      'CamelSkippedCase',
-      'CamelCaseSkipped',
-    ]
-    expect(bestMatch(candidates, 'CC')).toBe candidates[1]
+    it "weighs exact case matches higher even if string is longer", ->
+      candidates = ['Diagnostic', 'diagnostics0000']
+      expect(bestMatch(candidates, 'diag')).toBe candidates[1]
 
 
+    it "weighs abbreviation matches after spaces, underscores, and dashes the same", ->
+      expect(bestMatch(['sub-zero', 'sub zero', 'sub_zero'], 'sz')).toBe 'sub-zero'
+      expect(bestMatch(['sub zero', 'sub_zero', 'sub-zero'], 'sz')).toBe 'sub zero'
+      expect(bestMatch(['sub_zero', 'sub-zero', 'sub zero'], 'sz')).toBe 'sub_zero'
+
+
+    it "weighs abbreviation higher than scattered letter in a smaller word (also not greeddy)", ->
+      candidates = [
+        'application.rb'
+        'application_controller'
+      ]
+      expect(bestMatch(candidates, 'acon')).toBe candidates[1]
+
+    it "weighs matches at the start of the string or base name higher", ->
+      expect(bestMatch(['a_b_c', 'a_b'], 'ab')).toBe 'a_b'
+      expect(bestMatch(['z_a_b', 'a_b'], 'ab')).toBe 'a_b'
+      expect(bestMatch(['a_b_c', 'c_a_b'], 'ab')).toBe 'a_b_c'
+      expect(bestMatch(['Unin-stall', path.join('dir1', 'dir2', 'dir3', 'Installation')],
+        'install')).toBe path.join('dir1', 'dir2', 'dir3', 'Installation')
+      expect(bestMatch(['Uninstall', path.join('dir', 'Install')], 'install')).toBe path.join('dir', 'Install')
+
+    it "weighs CamelCase matches higher", ->
+      candidates = [
+        'FilterFactors.js',
+        'FilterFactors.styl',
+        'FilterFactors.html',
+        'FilterFactorTests.html',
+        'SpecFilterFactors.js'
+      ]
+      expect(bestMatch(candidates, 'FFT')).toBe 'FilterFactorTests.html'
+      expect(bestMatch(candidates, 'fft')).toBe 'FilterFactorTests.html'
+
+    it "weighs CamelCase matches higher than middle of word exact matches, or snake_abbrv", ->
+
+      candidates = [
+        'switch.css',
+        'user_id_to_client',
+        'ImportanceTableCtrl.js'
+      ]
+      expect(bestMatch(candidates, 'itc')).toBe candidates[2]
+      expect(bestMatch(candidates, 'ITC')).toBe candidates[2]
+
+
+    it "account for case in CamelCase vs Substring matches", ->
+
+      candidates = [
+        'CamelCaseClass.js',
+        'cccManager.java00'
+      ]
+      expect(bestMatch(candidates, 'CCC')).toBe candidates[0]
+      expect(bestMatch(candidates, 'ccc')).toBe candidates[1]
+
+    it "prefer CamelCase that happens sooner", ->
+
+      candidates = [
+        'anotherCamelCase',
+        'thisCamelCase000',
+      ]
+      expect(bestMatch(candidates, 'CC')).toBe candidates[1]
+
+    it "prefer CamelCase in shorter haystack", ->
+
+      candidates = [
+        'CamelCase0',
+        'CamelCase',
+      ]
+      expect(bestMatch(candidates, 'CC')).toBe candidates[1]
+
+    it "prefer uninterrupted sequence CamelCase", ->
+
+      candidates = [
+        'CamelSkippedCase',
+        'CamelCaseSkipped',
+      ]
+      expect(bestMatch(candidates, 'CC')).toBe candidates[1]
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->

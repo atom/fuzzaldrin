@@ -306,11 +306,11 @@ exports.basenameScore = (string, query, score) ->
   # No PathSeparator.. no special base to score
   return score if (basePos == -1)
 
-  # Get baseScore bonus
+  # Get basePath score
   baseScore = exports.score(string.substring(basePos + 1, end + 1), query)
 
-  # We'll merge some of that bonus with full path score.
-  # Importance of bonus fade with directory depth until it reach 50/50
+  # We'll merge some of that base path score with full path score.
+  # Mix start at 50/50 then favor of full path as directory depth increase
   alpha = 2.5 / ( 5.0 + countDir(string, end + 1) )
   score = alpha * baseScore + (1 - alpha) * score
 
