@@ -82,9 +82,12 @@ exports.score = score = (subject, query, ignore) ->
   query_lw = query.toLowerCase()
 
   #haystack size penalty
-  sz = 2*tau / (2*tau + n)
+  sz = 4*tau / (4*tau + n)
 
-  #Exact Match => bypass (if case sensitive match)
+  #----------------------------
+  # Exact Match
+  # => bypass
+
   if ( p = subject_lw.indexOf(query_lw)) > -1
 
     base = wex * m
@@ -94,7 +97,7 @@ exports.score = score = (subject, query, ignore) ->
 
     #sustring happens right after a separator (prefix)
     if (p == 0 or subject[p - 1] of sep_map)
-      exact += 3 * base
+      exact += 4 * base
 
     # last position, the +1s cancel out
     # for both the "length=<last index>+1" and the buffer=length+1
@@ -106,7 +109,7 @@ exports.score = score = (subject, query, ignore) ->
 
     if(subject.indexOf(query) > -1)
       #substring is ExactCase
-      exact += 2 * base
+      exact += 2*base
 
     else
       #test for camelCase
@@ -115,14 +118,24 @@ exports.score = score = (subject, query, ignore) ->
 
     return exact * sz
 
+  #----------------------------
+  # Abbreviations sequence
 
-  #test for camelCase (no exact substring)
+  # for example, if we type "surl" to search StatusUrl
+  # this will recognize and boost "su" as CamelCase sequence
+  # then "surl" will be passed to next scoring step.
+
+  #test for camelCase
   camel = camelPrefix(subject, subject_lw, query, query_lw)
-  exact = 2 * wex * camel[0] * (1.0 + tau / (tau + camel[1]))
+  exact = 3 * wex * camel[0] * (1.0 + tau / (tau + camel[1]))
 
-  #Whole query is camelCase abbreviation ?
+  #Whole query is camelCase abbreviation ? then => bypass
   if(camel[0] == query.length)
     return exact
+
+  #----------------------------
+  # Individual chars
+  # (Smith Waterman Gotoh algorithm)
 
   #Init
   vrow = new Array(n)
@@ -209,7 +222,7 @@ camelPrefix = (subject, subject_lw, query, query_lw) ->
   n = subject_lw.length
 
   count = 0
-  first = 0 # report zero on non-match to fit the fade function
+  pos = 0 #output centroid, +1 bypass division per 0 and boost result toward start
 
   i = -1
   j = -1
@@ -230,8 +243,8 @@ camelPrefix = (subject, subject_lw, query, query_lw) ->
       #Subject Uppercase, is it a match ?
       else if( qi_lw == sj_lw )
 
-        #record first match
-        first = j if count == 0
+        #record position
+        pos = j if count == 0
 
         #Is Query Uppercase too ?
         qi = query[i]
@@ -240,16 +253,15 @@ camelPrefix = (subject, subject_lw, query, query_lw) ->
         break
 
       #End of subject
-      else if j == k then return count
+      if j == k then return [count, pos]
 
       else
         # Skipped a CamelCase candidate...
         # Lower quality of the match by increasing first match pos
-        first+=2
+        pos+=2
 
   #end of query
-  return [count, first]
-
+  return [count, pos]
 
 #
 # filer query until we only get essential char
