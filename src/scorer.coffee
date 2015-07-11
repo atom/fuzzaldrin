@@ -19,7 +19,7 @@ wa = 40 # bonus of making an acronym match
 ws = 20 # bonus of making a separator match
 
 wo = -10 # penalty to open a gap
-we = -1 # penalty to continue an open gap (inside a match) 
+we = -1 # penalty to continue an open gap (inside a match)
 
 wst = 15 # bonus for match near start of string
 wex = 60 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
@@ -160,7 +160,7 @@ exports.score = score = (subject, query) ->
     while ++j < n
       #foreach char of subject
 
-      # exact the options
+      # score the options
       gapA = gapArow[j] = Math.max(gapArow[j] + we, vrow[j] + wo)
       gapB = Math.max(gapB + we, vrow[j - 1] + wo)
       align = if ( query_lw[i - 1] == subject_lw[j - 1] ) then vd + scoreMatchingChar(query, subject, i - 1, j - 1) else 0
@@ -169,7 +169,7 @@ exports.score = score = (subject, query) ->
       #Get the best option (align set the lower-bound to 0)
       v = vrow[j] = Math.max(align, gapA, gapB)
 
-      #Record best exact
+      #Record best score
       if v > vmax
         vmax = v
 
@@ -355,3 +355,117 @@ countDir = (path, end) ->
   # c) normal char ".git/"
 
   return count
+
+
+#
+# Align sequence
+# Return position of subject that match query.
+#
+
+
+# Directions constants
+STOP = 0
+UP = 1
+LEFT = 2
+DIAGONAL = 3
+
+exports.align = (subject, query, offset = 0) ->
+
+  m = query.length + 1
+  n = subject.length + 1
+
+  subject_lw = subject.toLowerCase()
+  query_lw = query.toLowerCase()
+
+  #Init
+  vrow = new Array(n)
+  gapArow = new Array(n)
+  gapA = 0
+  gapB = 0
+  vmax = 0
+  imax = -1
+  jmax = -1
+
+  trace = new Array(m * n)
+  pos = n - 1
+
+
+  #Fill with 0
+  j = -1
+  while ++j < n
+    gapArow[j] = 0
+    vrow[j] = 0
+    trace[j] = STOP
+
+  i = 0 #1..m-1
+  while ++i < m #foreach char of query
+
+    gapB = 0
+    vd = vrow[0]
+    pos++
+    trace[pos] = STOP
+
+    j = 0 #1..n-1
+    while ++j < n #foreach char of subject
+
+      # score the options
+      gapA = gapArow[j] = Math.max(gapArow[j] + we, vrow[j] + wo)
+      gapB = Math.max(gapB + we, vrow[j - 1] + wo)
+      align = if ( query_lw[i - 1] == subject_lw[j - 1] ) then vd + scoreMatchingChar(query, subject, i - 1, j - 1) else 0
+      vd = vrow[j]
+
+      #Get the best option (align set the lower-bound to 0)
+      v = vrow[j] = Math.max(align, gapA, gapB)
+
+      # what triggered the best score ?
+      #In case of equality, taking gapB get us closer to the start of the string.
+
+      pos++ #pos = i * n + j
+      switch v
+        when 0
+          trace[pos] = STOP
+        when gapB
+          trace[pos] = LEFT
+        when gapA
+          trace[pos] = UP
+        when align
+          trace[pos] = DIAGONAL
+          #Record best score
+          if v > vmax
+            vmax = v
+            imax = i
+            jmax = j
+
+        else
+          trace[pos] = STOP
+          break
+
+  # -------------------
+  # Go back in the trace matrix from imax, jmax
+  # and collect diagonals
+
+  i = imax
+  j = jmax
+  pos = i * n + j
+  backtrack = true
+  matches = []
+  offset--
+
+  while backtrack
+    switch trace[pos]
+      when UP
+        i--
+        pos -= n
+      when LEFT
+        j--
+        pos--
+      when DIAGONAL
+        matches.push j+offset
+        j--
+        i--
+        pos -= n + 1
+      else
+        backtrack = false
+
+  matches.reverse()
+  return matches
