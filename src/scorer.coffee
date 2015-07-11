@@ -19,7 +19,7 @@ wa = 40 # bonus of making an acronym match
 ws = 20 # bonus of making a separator match
 
 wo = -10 # penalty to open a gap
-we = -2 # penalty to continue an open gap (inside a match)
+we = -1 # penalty to continue an open gap (inside a match) 
 
 wst = 15 # bonus for match near start of string
 wex = 60 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
@@ -74,7 +74,7 @@ opt_char_re = /[ _\-]/g
 # Main scoring algorithm
 #
 
-exports.score = score = (subject, query, ignore) ->
+exports.score = score = (subject, query) ->
   m = query.length + 1
   n = subject.length + 1
 
@@ -222,7 +222,7 @@ camelPrefix = (subject, subject_lw, query, query_lw) ->
   n = subject_lw.length
 
   count = 0
-  pos = 0 #output centroid, +1 bypass division per 0 and boost result toward start
+  pos = 0
 
   i = -1
   j = -1
@@ -264,7 +264,7 @@ camelPrefix = (subject, subject_lw, query, query_lw) ->
   return [count, pos]
 
 #
-# filer query until we only get essential char
+# filer query until we only get required char
 #
 
 exports.coreChars = coreChars = (query) ->
@@ -272,7 +272,7 @@ exports.coreChars = coreChars = (query) ->
 
 
 #
-# yes/no: is all characters of query in subject, in proper order
+# yes/no: is all required characters of query in subject, in proper order
 #
 
 exports.isMatch = isMatch = (subject, query) ->
@@ -308,25 +308,26 @@ exports.isMatch = isMatch = (subject, query) ->
 # Score adjustment for path
 #
 
-exports.basenameScore = (string, query, score) ->
-  return 0 if score == 0
+exports.basenameScore = (string, query, fullPathScore) ->
+  return 0 if fullPathScore == 0
+
+  # Skip trailing slashes
   end = string.length - 1
-  end-- while string[end] is PathSeparator # Skip trailing slashes
+  end-- while string[end] is PathSeparator
 
+  # Get position of basePath of string. If no PathSeparator, no base path exist.
   basePos = string.lastIndexOf(PathSeparator, end)
-
-  # No PathSeparator.. no special base to score
-  return score if (basePos == -1)
+  return fullPathScore if (basePos == -1)
 
   # Get basePath score
-  baseScore = exports.score(string.substring(basePos + 1, end + 1), query)
+  basePathScore = score(string.substring(basePos + 1, end + 1), query)
 
   # We'll merge some of that base path score with full path score.
   # Mix start at 50/50 then favor of full path as directory depth increase
   alpha = 2.5 / ( 5.0 + countDir(string, end + 1) )
-  score = alpha * baseScore + (1 - alpha) * score
+  fullPathScore = alpha * basePathScore + (1 - alpha) * fullPathScore
 
-  return score
+  return fullPathScore
 
 #
 # Count number of folder in a path.

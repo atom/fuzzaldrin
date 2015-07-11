@@ -6,17 +6,19 @@ PathSeparator = require('path').sep
 
 module.exports =
   filter: (candidates, query, options) ->
-    if query
-      queryHasSlashes = query.indexOf(PathSeparator) isnt -1
-    filter(candidates, query, queryHasSlashes, options)
+    filter(candidates, query, options)
 
   score: (string, query) ->
     return 0 unless string
     return 0 unless query
 
-    queryHasSlashes = query.indexOf(PathSeparator) isnt -1
+    #get "file.ext" from "folder/file.ext"
+    pos = query.indexOf(PathSeparator)
+    baseQuery = if pos > -1 then query.substring(pos) else query
+
     score = scorer.score(string, query)
-    score = scorer.basenameScore(string, query, score) unless queryHasSlashes
+    score = scorer.basenameScore(string, baseQuery, score)
+
     score
 
   match: (string, query) ->
@@ -28,7 +30,7 @@ module.exports =
     matches = matcher.match(string, query)
     unless queryHasSlashes
       baseMatches = matcher.basenameMatch(string, query)
-      # Combine the results, removing dupicate indexes
+      # Combine the results, removing duplicate indexes
       matches = matches.concat(baseMatches).sort (a, b) -> a - b
       seen = null
       index = 0

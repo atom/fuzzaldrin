@@ -89,6 +89,14 @@ describe "filtering", ->
       expect(bestMatch(candidate, "base file")).toBe candidate[0]
       expect(bestMatch(candidate, "as fle")).toBe candidate[0]
 
+  describe "when the query contains slashes", ->
+    it "weighs basename matches higher", ->
+      candidates = [
+        rootPath('test', 'filter', 'test.js')
+        rootPath('filter', 'test', 'filter.js')
+      ]
+      #expect(bestMatch(candidates, path.join('test','filt')  )).toBe candidates[1]
+      expect(bestMatch(candidates, path.join('test','filt.') )).toBe candidates[1]
 
   describe "when the candidate is all slashes", ->
     it "does not throw an exception", ->
