@@ -56,11 +56,11 @@ exports.fastMatch = (string, query, stringOffset=0) ->
 
 
 #
-# Combine two sorted sequence and remove duplicate
-# (use to combine two match)
+# Combine two matches result and remove duplicate
+# (Assume sequences are sorted, matches are sorted by construction.)
 #
 
-exports.mergeSorted = (a, b) ->
+exports.mergeMatches = (a, b) ->
 
   out = []
   m = a.length

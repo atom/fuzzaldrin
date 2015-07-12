@@ -58,8 +58,7 @@ describe "filtering", ->
       ]
       expect(bestMatch(candidates, 'bar')).toBe candidates[1]
 
-      expect(bestMatch([path.join('f', 'o', '1_a_z'), path.join('f', 'o', 'a_z')], 'az')).toBe path.join('f', 'o',
-        'a_z')
+      expect(bestMatch([path.join('f', 'o', '1_a_z'), path.join('f', 'o', 'a_z')], 'az')).toBe path.join('f','o','a_z')
       expect(bestMatch([path.join('f', '1_a_z'), path.join('f', 'o', 'a_z')], 'az')).toBe path.join('f', 'o', 'a_z')
 
     it "prefer shallow path", ->

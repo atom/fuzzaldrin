@@ -45,7 +45,7 @@ module.exports =
       baseMatches = matcher.basenameMatch(string, baseQuery)
 
       # Combine the results, removing duplicate indexes
-      matches = matcher.mergeSorted(matches,baseMatches)
+      matches = matcher.mergeMatches(matches,baseMatches)
 
     matches
 

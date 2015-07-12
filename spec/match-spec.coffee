@@ -29,6 +29,7 @@ describe "match(string, query)", ->
 
   it "prefer whole word to scattered letters", ->
     #expect(match('filter gruntfile filler', 'file')).toEqual [ 12, 13, 14,15]
+    expect(match('fiddle gruntfile filler', 'file')).toEqual [ 12, 13, 14,15]
     expect(match('fiddle file', 'file')).toEqual [ 7, 8, 9, 10]
     expect(match('find le file', 'file')).toEqual [ 8, 9, 10, 11]
 

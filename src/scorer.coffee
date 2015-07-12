@@ -17,7 +17,6 @@ wc = 100 # bonus for proper case
 
 wa = 300 # bonus of making an acronym match (Start of Accronym *3 then consecutive *2 )
 ws = 200 # bonus of making a separator match
-wc = 100 # bonus per character of an sequence, increase with number of char per sequence.
 
 wo = -100 # penalty to open a gap
 we = -1 # penalty to continue an open gap (inside a match)
@@ -145,7 +144,7 @@ exports.score = score = (subject, query) ->
   #Init
   vRow = new Array(n)
   gapARow = new Array(n)
-  cscRow = new Array(n)
+  seqRow = new Array(n)
   gapA = 0
   gapB = 0
   vmax = 0
@@ -155,35 +154,39 @@ exports.score = score = (subject, query) ->
   while ++j < n
     gapARow[j] = 0
     vRow[j] = 0
-    cscRow[j] = 0
+    seqRow[j] = 0
 
   i = 0 #1..m-1
   while ++i < m     #foreach char of query
 
     gapB = 0
-    vd = vRow[0]
-    csc = cscRow[0]
+    v_diag = vRow[0]
+    seq_diag = seqRow[0]
 
     j = 0 #1..n-1
     while ++j < n   #foreach char of subject
 
-      # score the options
+      #Compute the cost of making a gap
       gapA = gapARow[j] = Math.max(gapARow[j] + we, vRow[j] + wo)
       gapB = Math.max(gapB + we, vRow[j - 1] + wo)
 
+      #Compute a tentative match
       if ( query_lw[i - 1] == subject_lw[j - 1] )
-        tmp = cscRow[j]
-        cscRow[j] = csc + 1
-        csc = tmp
-        align =  vd + scoreMatchingChar(query, subject, i - 1, j - 1, cscRow)
+
+        csc = if seq_diag == 0 then 1 + countConsecutive(query_lw, subject_lw, i , j ) else  seq_diag
+        seq_diag = seqRow[j]
+        seqRow[j] = csc
+
+        align =  v_diag + csc*scoreMatchingChar(query, subject, i - 1, j - 1)
+
       else
-        csc = cscRow[j]
-        cscRow[j] = 0
+        seq_diag = seqRow[j]
+        seqRow[j] = 0
         align = 0
 
-      vd = vRow[j]
 
       #Get the best option (align set the lower-bound to 0)
+      v_diag = vRow[j]
       v = vRow[j] = Math.max(align, gapA, gapB)
 
       #Record best score
@@ -197,11 +200,11 @@ exports.score = score = (subject, query) ->
 # Compute the bonuses for two chars that are confirmed to matches in a case-insensitive way
 #
 
-scoreMatchingChar = (query, subject, i, j, consecutive) ->
+scoreMatchingChar = (query, subject, i, j) ->
+
 
   qi = query[i]
   sj = subject[j]
-  csc = consecutive[j+1]
 
   #Proper casing bonus
   bonus = if qi == sj then wc else 0
@@ -209,42 +212,20 @@ scoreMatchingChar = (query, subject, i, j, consecutive) ->
   #start of string bonus
   bonus += Math.floor(wst * tau / (tau  + j))
 
-  #consecutive char bonus
-  # this one is relatively small (think consecutive in the middle of a word)
-  # real bonus is for consecutive + start of word.
-  # single char match have csc of 1
-  if (csc == 1)
-    cscMod = 3
-  else
-    cscMod = 2
-    bonus += wc*(csc-1)
+  #match IS a separator
+  return ws + bonus if qi of sep_map
 
+  #match is FIRST char ( place a virtual token separator before first char of string)
+  return wa + bonus if  j == 0
 
-  # match IS a separator
-  if qi of sep_map
-    #reset sequence so following chain point to this separator
-    # and get start-of-word bonus
-    consecutive[j+1] = 0
-    return ws + bonus
-
-  # head point to the character before the sequence of consecutive matches
-  head = if j >= csc then j-csc else -1
-
-  # match is FIRST char ( place a virtual token separator before first char of string)
-  # also handle Head that point before the string
-  return cscMod*wa + bonus if ( head==-1 or j == 0)
-
-  #get char before the sequence
-  sHead = subject[head]
+  #get previous char
+  prev_s = subject[j - 1]
 
   #match FOLLOW a separator
-  return cscMod*wa + bonus if ( sHead of sep_map)
-
-  #get first char of the sequence
-  sStart = subject[head+1]
+  return wa + bonus if ( prev_s of sep_map)
 
   #match is Capital in camelCase (preceded by lowercase)
-  return cscMod*wa + bonus if (sStart == sStart.toUpperCase() and sHead == sHead.toLowerCase())
+  return wa + bonus if (sj == sj.toUpperCase() and prev_s == prev_s.toLowerCase())
 
   #normal Match, add proper case bonus
   return wm + bonus
@@ -344,6 +325,24 @@ exports.isMatch = isMatch = (subject, query) ->
   return true
 
 #
+# Count consecutive
+#
+
+countConsecutive = (a, b, i , j ) ->
+
+  m = a.length - i
+  n = b.length - j
+  k = if m<n then m else n
+
+  f=-1
+  while (++f<k and a[i+f] == b[j+f])
+    continue
+
+  return f
+
+
+
+#
 # Score adjustment for path
 #
 
@@ -362,10 +361,10 @@ exports.basenameScore = (string, query, fullPathScore) ->
   basePathScore = score(string.substring(basePos + 1, end + 1), query)
 
   # We'll merge some of that base path score with full path score.
-  # Mix start at 80% basepath:fullpath then favor full path as directory depth increase
-  # Note that basepath test are more nested than original so we'll have less than 80% mixed in
+  # Mix start favoring basepath then favor full path as directory depth increase
+  # Note that basepath test are more nested than original, so we have to compensate one level of nesting.
 
-  alpha = 0.8 * tau / ( tau + countDir(string, end + 1) )
+  alpha = 0.5 * 2*tau / ( 2*tau + countDir(string, end + 1) )
   fullPathScore = alpha * basePathScore + (1 - alpha) * fullPathScore
 
   return fullPathScore
@@ -421,7 +420,7 @@ exports.align = (subject, query, offset = 0) ->
   #Init
   vRow = new Array(n)
   gapARow = new Array(n)
-  cscRow = new Array(n)
+  seqRow = new Array(n)
   gapA = 0
   gapB = 0
   vmax = 0
@@ -437,36 +436,56 @@ exports.align = (subject, query, offset = 0) ->
   while ++j < n
     gapARow[j] = 0
     vRow[j] = 0
-    cscRow[j] = 0
+    seqRow[j] = 0
     trace[j] = STOP
 
   i = 0 #1..m-1
   while ++i < m #foreach char of query
 
     gapB = 0
-    vd = vRow[0]
-    csc = cscRow[0]
+    v_diag = vRow[0]
+    seq_diag = seqRow[0]
     pos++
     trace[pos] = STOP
 
     j = 0 #1..n-1
     while ++j < n #foreach char of subject
 
-      # score the options
+      # Score the options
+      # When comparing string A,B character per character
+      # we have 3 possible choices.
+      #
+      # 1) Remove character A[i] from the total match
+      # 2) Remove characer B[j] fromt the total match
+      # 3) Attempt to match A[i] with B[j]
+      #
+      # For the point 3, if char are different in a case insensitive way, score is 0
+      # if they are similar, take previous diagonal score (v_diag) and add similarity score.
+      # we use similarity(A,B) as an entry point to give various bonuses.
+      #
+      # We also keep track of match context. If we are inside a run of consecutive matches, all bonuses are increased
+      # And so are all penalty. (Encourage matching, discourage non matching)
+
+      #Compute the cost of making a gap
       gapA = gapARow[j] = Math.max(gapARow[j] + we, vRow[j] + wo)
       gapB = Math.max(gapB + we, vRow[j - 1] + wo)
 
+      #Compute a tentative match
       if ( query_lw[i - 1] == subject_lw[j - 1] )
-        tmp = cscRow[j]
-        cscRow[j] = csc + 1
-        csc = tmp
-        align =  vd + scoreMatchingChar(query, subject, i - 1, j - 1, cscRow)
+
+        csc = if seq_diag == 0 then 1 + countConsecutive(query_lw, subject_lw, i , j ) else  seq_diag
+        seq_diag = seqRow[j]
+        seqRow[j] = csc
+
+        align =  v_diag + csc*scoreMatchingChar(query, subject, i - 1, j - 1)
+
       else
-        csc = cscRow[j]
-        cscRow[j] = 0
+        seq_diag = seqRow[j]
+        seqRow[j] = 0
         align = 0
 
-      vd = vRow[j]
+
+      v_diag = vRow[j]
 
       #Get the best option (align set the lower-bound to 0)
       v = vRow[j] = Math.max(align, gapA, gapB)
