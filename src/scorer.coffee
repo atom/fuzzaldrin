@@ -12,17 +12,18 @@
 # https://github.com/joshaven/string_score/
 
 
-wm = 10 # base score of making a match
-wc = 10 # bonus for proper case
+wm = 100 # base score of making a match
+wc = 100 # bonus for proper case
 
-wa = 40 # bonus of making an acronym match
-ws = 20 # bonus of making a separator match
+wa = 300 # bonus of making an acronym match (Start of Accronym *3 then consecutive *2 )
+ws = 200 # bonus of making a separator match
+wc = 100 # bonus per character of an sequence, increase with number of char per sequence.
 
-wo = -10 # penalty to open a gap
+wo = -100 # penalty to open a gap
 we = -1 # penalty to continue an open gap (inside a match)
 
-wst = 10 # bonus for match near start of string
-wex = 60 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
+wst = 100 # bonus for match near start of string
+wex = 600 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
 
 #
 # Fading function
@@ -90,7 +91,9 @@ exports.score = score = (subject, query) ->
 
   if ( p = subject_lw.indexOf(query_lw)) > -1
 
-    base = wex * m
+    #bonus per consecutive char grow with number of consecutive
+    #so this need to be squared to stay on top.
+    base = wex * m *m
 
     #base bonus + position decay
     exact = base * (1.0 + tau / (tau + p))
@@ -114,7 +117,8 @@ exports.score = score = (subject, query) ->
     else
       #test for camelCase
       camel = camelPrefix(subject, subject_lw, query, query_lw)
-      exact += 1.5 * wex * camel[0] * (1.0 + tau / (tau + camel[1]))
+      nbc =  camel[0]
+      exact += 1.5 * wex * nbc * nbc * (1.0 + tau / (tau + camel[1]))
 
     return exact * sz
 
@@ -127,10 +131,11 @@ exports.score = score = (subject, query) ->
 
   #test for camelCase
   camel = camelPrefix(subject, subject_lw, query, query_lw)
-  exact = 3 * wex * camel[0] * (1.0 + tau / (tau + camel[1]))
+  nbc =  camel[0]
+  exact = 3 * wex * nbc * nbc * (1.0 + tau / (tau + camel[1]))
 
   #Whole query is camelCase abbreviation ? then => bypass
-  if(camel[0] == query.length)
+  if(nbc == query.length)
     return exact
 
   #----------------------------
@@ -138,8 +143,9 @@ exports.score = score = (subject, query) ->
   # (Smith Waterman Gotoh algorithm)
 
   #Init
-  vrow = new Array(n)
-  gapArow = new Array(n)
+  vRow = new Array(n)
+  gapARow = new Array(n)
+  cscRow = new Array(n)
   gapA = 0
   gapB = 0
   vmax = 0
@@ -147,27 +153,38 @@ exports.score = score = (subject, query) ->
   #Fill with 0
   j = -1
   while ++j < n
-    gapArow[j] = 0
-    vrow[j] = 0
+    gapARow[j] = 0
+    vRow[j] = 0
+    cscRow[j] = 0
 
   i = 0 #1..m-1
-  while ++i < m
-    #foreach char of query
+  while ++i < m     #foreach char of query
+
     gapB = 0
-    vd = vrow[0]
+    vd = vRow[0]
+    csc = cscRow[0]
 
     j = 0 #1..n-1
-    while ++j < n
-      #foreach char of subject
+    while ++j < n   #foreach char of subject
 
       # score the options
-      gapA = gapArow[j] = Math.max(gapArow[j] + we, vrow[j] + wo)
-      gapB = Math.max(gapB + we, vrow[j - 1] + wo)
-      align = if ( query_lw[i - 1] == subject_lw[j - 1] ) then vd + scoreMatchingChar(query, subject, i - 1, j - 1) else 0
-      vd = vrow[j]
+      gapA = gapARow[j] = Math.max(gapARow[j] + we, vRow[j] + wo)
+      gapB = Math.max(gapB + we, vRow[j - 1] + wo)
+
+      if ( query_lw[i - 1] == subject_lw[j - 1] )
+        tmp = cscRow[j]
+        cscRow[j] = csc + 1
+        csc = tmp
+        align =  vd + scoreMatchingChar(query, subject, i - 1, j - 1, cscRow)
+      else
+        csc = cscRow[j]
+        cscRow[j] = 0
+        align = 0
+
+      vd = vRow[j]
 
       #Get the best option (align set the lower-bound to 0)
-      v = vrow[j] = Math.max(align, gapA, gapB)
+      v = vRow[j] = Math.max(align, gapA, gapB)
 
       #Record best score
       if v > vmax
@@ -180,10 +197,11 @@ exports.score = score = (subject, query) ->
 # Compute the bonuses for two chars that are confirmed to matches in a case-insensitive way
 #
 
-scoreMatchingChar = (query, subject, i, j) ->
+scoreMatchingChar = (query, subject, i, j, consecutive) ->
 
   qi = query[i]
   sj = subject[j]
+  csc = consecutive[j+1]
 
   #Proper casing bonus
   bonus = if qi == sj then wc else 0
@@ -191,21 +209,42 @@ scoreMatchingChar = (query, subject, i, j) ->
   #start of string bonus
   bonus += Math.floor(wst * tau / (tau  + j))
 
-  #match IS a separator
-  return ws + bonus if qi of sep_map
+  #consecutive char bonus
+  # this one is relatively small (think consecutive in the middle of a word)
+  # real bonus is for consecutive + start of word.
+  # single char match have csc of 1
+  if (csc == 1)
+    cscMod = 3
+  else
+    cscMod = 2
+    bonus += wc*(csc-1)
 
-  #match is FIRST char ( place a virtual token separator before first char of string)
-  return wa + bonus if ( j == 0 or i == 0)
 
-  #get previous char
-  prev_s = subject[j - 1]
-  prev_q = query[i - 1]
+  # match IS a separator
+  if qi of sep_map
+    #reset sequence so following chain point to this separator
+    # and get start-of-word bonus
+    consecutive[j+1] = 0
+    return ws + bonus
+
+  # head point to the character before the sequence of consecutive matches
+  head = if j >= csc then j-csc else -1
+
+  # match is FIRST char ( place a virtual token separator before first char of string)
+  # also handle Head that point before the string
+  return cscMod*wa + bonus if ( head==-1 or j == 0)
+
+  #get char before the sequence
+  sHead = subject[head]
 
   #match FOLLOW a separator
-  return wa + bonus if ( prev_s of sep_map) or ( prev_q of sep_map )
+  return cscMod*wa + bonus if ( sHead of sep_map)
+
+  #get first char of the sequence
+  sStart = subject[head+1]
 
   #match is Capital in camelCase (preceded by lowercase)
-  return wa + bonus if (sj == sj.toUpperCase() and prev_s == prev_s.toLowerCase())
+  return cscMod*wa + bonus if (sStart == sStart.toUpperCase() and sHead == sHead.toLowerCase())
 
   #normal Match, add proper case bonus
   return wm + bonus
@@ -323,8 +362,10 @@ exports.basenameScore = (string, query, fullPathScore) ->
   basePathScore = score(string.substring(basePos + 1, end + 1), query)
 
   # We'll merge some of that base path score with full path score.
-  # Mix start at 50/50 then favor of full path as directory depth increase
-  alpha = 2.5 / ( 5.0 + countDir(string, end + 1) )
+  # Mix start at 80% basepath:fullpath then favor full path as directory depth increase
+  # Note that basepath test are more nested than original so we'll have less than 80% mixed in
+
+  alpha = 0.8 * tau / ( tau + countDir(string, end + 1) )
   fullPathScore = alpha * basePathScore + (1 - alpha) * fullPathScore
 
   return fullPathScore
@@ -378,8 +419,9 @@ exports.align = (subject, query, offset = 0) ->
   query_lw = query.toLowerCase()
 
   #Init
-  vrow = new Array(n)
-  gapArow = new Array(n)
+  vRow = new Array(n)
+  gapARow = new Array(n)
+  cscRow = new Array(n)
   gapA = 0
   gapB = 0
   vmax = 0
@@ -393,15 +435,17 @@ exports.align = (subject, query, offset = 0) ->
   #Fill with 0
   j = -1
   while ++j < n
-    gapArow[j] = 0
-    vrow[j] = 0
+    gapARow[j] = 0
+    vRow[j] = 0
+    cscRow[j] = 0
     trace[j] = STOP
 
   i = 0 #1..m-1
   while ++i < m #foreach char of query
 
     gapB = 0
-    vd = vrow[0]
+    vd = vRow[0]
+    csc = cscRow[0]
     pos++
     trace[pos] = STOP
 
@@ -409,13 +453,23 @@ exports.align = (subject, query, offset = 0) ->
     while ++j < n #foreach char of subject
 
       # score the options
-      gapA = gapArow[j] = Math.max(gapArow[j] + we, vrow[j] + wo)
-      gapB = Math.max(gapB + we, vrow[j - 1] + wo)
-      align = if ( query_lw[i - 1] == subject_lw[j - 1] ) then vd + scoreMatchingChar(query, subject, i - 1, j - 1) else 0
-      vd = vrow[j]
+      gapA = gapARow[j] = Math.max(gapARow[j] + we, vRow[j] + wo)
+      gapB = Math.max(gapB + we, vRow[j - 1] + wo)
+
+      if ( query_lw[i - 1] == subject_lw[j - 1] )
+        tmp = cscRow[j]
+        cscRow[j] = csc + 1
+        csc = tmp
+        align =  vd + scoreMatchingChar(query, subject, i - 1, j - 1, cscRow)
+      else
+        csc = cscRow[j]
+        cscRow[j] = 0
+        align = 0
+
+      vd = vRow[j]
 
       #Get the best option (align set the lower-bound to 0)
-      v = vrow[j] = Math.max(align, gapA, gapB)
+      v = vRow[j] = Math.max(align, gapA, gapB)
 
       # what triggered the best score ?
       #In case of equality, taking gapB get us closer to the start of the string.

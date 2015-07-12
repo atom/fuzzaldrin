@@ -28,7 +28,10 @@ describe "match(string, query)", ->
     expect(match(path.join('--X-Y-', '-X--Y'), 'XY')).toEqual [2, 4, 8, 11]
 
   it "prefer whole word to scattered letters", ->
+    #expect(match('filter gruntfile filler', 'file')).toEqual [ 12, 13, 14,15]
     expect(match('fiddle file', 'file')).toEqual [ 7, 8, 9, 10]
+    expect(match('find le file', 'file')).toEqual [ 8, 9, 10, 11]
+
 
   it "prefer camelCase to scattered letters", ->
     expect(match('ImportanceTableCtrl', 'itc')).toEqual [0,10,15]

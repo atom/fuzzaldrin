@@ -45,39 +45,8 @@ module.exports =
       baseMatches = matcher.basenameMatch(string, baseQuery)
 
       # Combine the results, removing duplicate indexes
-      matches = mergeSorted(matches,baseMatches)
+      matches = matcher.mergeSorted(matches,baseMatches)
 
     matches
 
-#
-# Combine two sorted sequence, remove duplicate
-#
-
-mergeSorted = (a, b) ->
-
-  out = []
-  m = a.length
-  n = b.length
-
-  return a.slice() if n == 0
-  return b.slice() if m == 0
-
-  i = -1
-  j = 0
-  bj = b[0]
-
-  while ++i < m
-    ai = a[i]
-
-    while bj <= ai and ++j < n
-      if bj < ai
-        out.push bj
-      bj = b[j]
-
-    out.push ai
-
-  while j < n
-    out.push b[j++]
-
-  return out
 

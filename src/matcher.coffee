@@ -24,11 +24,8 @@ exports.match = (string, query, stringOffset=0) ->
   return scorer.align(string, query, stringOffset)
 
 
-
-
 # Fast but greedy algorithm, IE it report the first occurrence of char
 # even if a latter occurrence will score more
-
 exports.fastMatch = (string, query, stringOffset=0) ->
   return [stringOffset...stringOffset + string.length] if string is query
 
@@ -56,3 +53,37 @@ exports.fastMatch = (string, query, stringOffset=0) ->
     string = string.substring(indexInString + 1, stringLength)
 
   matches
+
+
+#
+# Combine two sorted sequence and remove duplicate
+# (use to combine two match)
+#
+
+exports.mergeSorted = (a, b) ->
+
+  out = []
+  m = a.length
+  n = b.length
+
+  return a.slice() if n == 0
+  return b.slice() if m == 0
+
+  i = -1
+  j = 0
+  bj = b[0]
+
+  while ++i < m
+    ai = a[i]
+
+    while bj <= ai and ++j < n
+      if bj < ai
+        out.push bj
+      bj = b[j]
+
+    out.push ai
+
+  while j < n
+    out.push b[j++]
+
+  return out
