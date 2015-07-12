@@ -21,15 +21,21 @@ module.exports =
 
     score
 
-  match: (string, query) ->
+  match: (string, query, {allowErrors}={}) ->
     return [] unless string
     return [] unless query
     return [0...string.length] if string is query
 
-    queryHasSlashes = query.indexOf(PathSeparator) isnt -1
+    return [] unless !!allowErrors or scorer.isMatch(string,query)
+
+    #get "file.ext" from "folder/file.ext"
+    pos = query.indexOf(PathSeparator)
+    baseQuery = if pos > -1 then query.substring(pos) else query
+
     matches = matcher.match(string, query)
-    unless queryHasSlashes
-      baseMatches = matcher.basenameMatch(string, query)
+    if(string.indexOf(PathSeparator) > -1)
+
+      baseMatches = matcher.basenameMatch(string, baseQuery)
       # Combine the results, removing duplicate indexes
       matches = matches.concat(baseMatches).sort (a, b) -> a - b
       seen = null
