@@ -21,7 +21,7 @@ ws = 20 # bonus of making a separator match
 wo = -10 # penalty to open a gap
 we = -1 # penalty to continue an open gap (inside a match)
 
-wst = 15 # bonus for match near start of string
+wst = 10 # bonus for match near start of string
 wex = 60 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
 
 #
@@ -34,7 +34,7 @@ wex = 60 # bonus per character of an exact match. If exact coincide with prefix,
 # tau / ( tau + half_score) = 0.5
 # tau / ( tau + tau) = 0.5 => tau = half_score
 
-tau = 10
+tau = 15
 
 
 #Note: separator are likely to trigger both a
@@ -189,7 +189,7 @@ scoreMatchingChar = (query, subject, i, j) ->
   bonus = if qi == sj then wc else 0
 
   #start of string bonus
-  bonus += Math.floor(wst * 10.0 / (10.0 + i + j))
+  bonus += Math.floor(wst * tau / (tau  + j))
 
   #match IS a separator
   return ws + bonus if qi of sep_map
@@ -436,9 +436,6 @@ exports.align = (subject, query, offset = 0) ->
             imax = i
             jmax = j
 
-        else
-          trace[pos] = STOP
-          break
 
   # -------------------
   # Go back in the trace matrix from imax, jmax
