@@ -213,8 +213,8 @@ scoreMatchingChar = (query, subject, i, j) ->
 
 #
 # Count the number of camelCase prefix
-# (Modified isMatch)
-#
+# Note that case insensitive character such as space will count as lowercase.
+# So this handle both "CamelCase" and "Title Case"
 
 camelPrefix = (subject, subject_lw, query, query_lw) ->
 

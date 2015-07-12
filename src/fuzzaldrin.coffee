@@ -32,19 +32,52 @@ module.exports =
     pos = query.indexOf(PathSeparator)
     baseQuery = if pos > -1 then query.substring(pos) else query
 
+    # Full path results
     matches = matcher.match(string, query)
+
+    #if no matches on the long path. there will not be any on the base path either.
+    return matches if matches.length == 0
+
+    # Is there a base path ?
     if(string.indexOf(PathSeparator) > -1)
 
+      # Base path results
       baseMatches = matcher.basenameMatch(string, baseQuery)
+
       # Combine the results, removing duplicate indexes
-      matches = matches.concat(baseMatches).sort (a, b) -> a - b
-      seen = null
-      index = 0
-      while index < matches.length
-        if index and seen is matches[index]
-          matches.splice(index, 1) # remove duplicate
-        else
-          seen = matches[index]
-          index++
+      matches = mergeSorted(matches,baseMatches)
 
     matches
+
+#
+# Combine two sorted sequence, remove duplicate
+#
+
+mergeSorted = (a, b) ->
+
+  out = []
+  m = a.length
+  n = b.length
+
+  return a.slice() if n == 0
+  return b.slice() if m == 0
+
+  i = -1
+  j = 0
+  bj = b[0]
+
+  while ++i < m
+    ai = a[i]
+
+    while bj <= ai and ++j < n
+      if bj < ai
+        out.push bj
+      bj = b[j]
+
+    out.push ai
+
+  while j < n
+    out.push b[j++]
+
+  return out
+
