@@ -8,9 +8,10 @@ module.exports =
   filter: (candidates, query, options) ->
     filter(candidates, query, options)
 
-  score: (string, query) ->
+  score: (string, query, {allowErrors}={}) ->
     return 0 unless string
     return 0 unless query
+    return 0 unless !!allowErrors or scorer.isMatch(string,query)
 
     #get "file.ext" from "folder/file.ext"
     pos = query.indexOf(PathSeparator)
