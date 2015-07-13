@@ -28,17 +28,27 @@ describe "match(string, query)", ->
     expect(match(path.join('--X-Y-', '-X--Y'), 'XY')).toEqual [2, 4, 8, 11]
 
   it "prefer whole word to scattered letters", ->
-    #expect(match('filter gruntfile filler', 'file')).toEqual [ 12, 13, 14,15]
     expect(match('fiddle gruntfile filler', 'file')).toEqual [ 12, 13, 14,15]
     expect(match('fiddle file', 'file')).toEqual [ 7, 8, 9, 10]
     expect(match('find le file', 'file')).toEqual [ 8, 9, 10, 11]
 
+  it "prefer exact match", ->
+    expect(match('filter gruntfile filler', 'file')).toEqual [ 12, 13, 14,15]
 
   it "prefer camelCase to scattered letters", ->
     expect(match('ImportanceTableCtrl', 'itc')).toEqual [0,10,15]
 
   it "prefer acronym to scattered letters", ->
-    expect(match('action_control', 'acon')).toEqual [ 0, 7, 8, 9]
+    expect(match('action_config', 'acon')).toEqual [ 0, 7, 8, 9]
+    expect(match('application_control', 'acon')).toEqual [ 0, 12, 13, 14]
+
+  it "account for case in selecting camelCase vs consecutive", ->
+    expect(match('0xACACAC: CamelControlClass.ccc', 'CCC')).toEqual [ 10, 15, 22]
+    expect(match('0xACACAC: CamelControlClass.ccc', 'ccc')).toEqual [ 28, 29, 30]
+    expect(match('0xACACAC: CamelControlClass', 'ccc')).toEqual [ 10, 15, 22]
+
+
+
 
 
 

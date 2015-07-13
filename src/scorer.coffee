@@ -131,11 +131,11 @@ exports.score = score = (subject, query) ->
   #test for camelCase
   camel = camelPrefix(subject, subject_lw, query, query_lw)
   nbc =  camel[0]
-  exact = 3 * wex * nbc * nbc * (1.0 + tau / (tau + camel[1]))
+  exact = 5 * wex * nbc * nbc * (1.0 + tau / (tau + camel[1]))
 
   #Whole query is camelCase abbreviation ? then => bypass
-  if(nbc == query.length)
-    return exact
+  if(nbc >= query.length)
+    return exact * sz
 
   #----------------------------
   # Individual chars
@@ -177,7 +177,7 @@ exports.score = score = (subject, query) ->
         seq_diag = seqRow[j]
         seqRow[j] = csc
 
-        align =  v_diag + csc*scoreMatchingChar(query, subject, i - 1, j - 1)
+        align =  v_diag + csc*scoreMatchingChar(query, subject, i - 1, j - 1, nbc)
 
       else
         seq_diag = seqRow[j]
@@ -200,8 +200,7 @@ exports.score = score = (subject, query) ->
 # Compute the bonuses for two chars that are confirmed to matches in a case-insensitive way
 #
 
-scoreMatchingChar = (query, subject, i, j) ->
-
+scoreMatchingChar = (query, subject, i, j, camelBonus) ->
 
   qi = query[i]
   sj = subject[j]
@@ -225,7 +224,7 @@ scoreMatchingChar = (query, subject, i, j) ->
   return wa + bonus if ( prev_s of sep_map)
 
   #match is Capital in camelCase (preceded by lowercase)
-  return wa + bonus if (sj == sj.toUpperCase() and prev_s == prev_s.toLowerCase())
+  return (1 + camelBonus) * wa + bonus if (sj == sj.toUpperCase() and prev_s == prev_s.toLowerCase())
 
   #normal Match, add proper case bonus
   return wm + bonus
@@ -417,6 +416,9 @@ exports.align = (subject, query, offset = 0) ->
   subject_lw = subject.toLowerCase()
   query_lw = query.toLowerCase()
 
+  #this is like the consecutive bonus, but for scattered camelCase initials
+  nbc = camelPrefix(subject, subject_lw, query, query_lw)[0]
+
   #Init
   vRow = new Array(n)
   gapARow = new Array(n)
@@ -473,11 +475,22 @@ exports.align = (subject, query, offset = 0) ->
       #Compute a tentative match
       if ( query_lw[i - 1] == subject_lw[j - 1] )
 
-        csc = if seq_diag == 0 then 1 + countConsecutive(query_lw, subject_lw, i , j ) else  seq_diag
+        if seq_diag == 0
+          #forward search for a sequence of consecutive char
+          csc =  1 + countConsecutive(query_lw, subject_lw, i , j )
+
+          # exact case-insensitive match bonus (like score IndexOf)
+          # advantage vs indexOf is handing multiple occurrence of that pattern
+          csc *= 2 if csc == m-1
+        else
+          # Verify that previous char is a Match before applying sequence bonus.
+          # (this is not done for score because we don't keep trace)
+          csc = if trace[pos-n] == DIAGONAL then seq_diag else 1
+
         seq_diag = seqRow[j]
         seqRow[j] = csc
 
-        align =  v_diag + csc*scoreMatchingChar(query, subject, i - 1, j - 1)
+        align =  v_diag + csc*scoreMatchingChar(query, subject, i - 1, j - 1, nbc)
 
       else
         seq_diag = seqRow[j]
