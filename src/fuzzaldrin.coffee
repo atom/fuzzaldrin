@@ -6,37 +6,47 @@ PathSeparator = require('path').sep
 
 module.exports =
   filter: (candidates, query, options) ->
-    if query
-      queryHasSlashes = query.indexOf(PathSeparator) isnt -1
-    filter(candidates, query, queryHasSlashes, options)
+    filter(candidates, query, options)
 
   score: (string, query) ->
     return 0 unless string
     return 0 unless query
 
-    queryHasSlashes = query.indexOf(PathSeparator) isnt -1
+    #get "file.ext" from "folder/file.ext"
+    pos = query.indexOf(PathSeparator)
+    baseQuery = if pos > -1 then query.substring(pos) else query
+
     score = scorer.score(string, query)
-    score = scorer.basenameScore(string, query, score) unless queryHasSlashes
+    score = scorer.basenameScore(string, baseQuery, score)
+
     score
 
-  match: (string, query) ->
+  match: (string, query, {allowErrors}={}) ->
     return [] unless string
     return [] unless query
     return [0...string.length] if string is query
 
-    queryHasSlashes = query.indexOf(PathSeparator) isnt -1
+    return [] unless !!allowErrors or scorer.isMatch(string,query)
+
+    #get "file.ext" from "folder/file.ext"
+    pos = query.indexOf(PathSeparator)
+    baseQuery = if pos > -1 then query.substring(pos) else query
+
+    # Full path results
     matches = matcher.match(string, query)
-    unless queryHasSlashes
-      baseMatches = matcher.basenameMatch(string, query)
+
+    #if no matches on the long path. there will not be any on the base path either.
+    return matches if matches.length == 0
+
+    # Is there a base path ?
+    if(string.indexOf(PathSeparator) > -1)
+
+      # Base path results
+      baseMatches = matcher.basenameMatch(string, baseQuery)
+
       # Combine the results, removing duplicate indexes
-      matches = matches.concat(baseMatches).sort (a, b) -> a - b
-      seen = null
-      index = 0
-      while index < matches.length
-        if index and seen is matches[index]
-          matches.splice(index, 1) # remove duplicate
-        else
-          seen = matches[index]
-          index++
+      matches = matcher.mergeMatches(matches,baseMatches)
 
     matches
+
+

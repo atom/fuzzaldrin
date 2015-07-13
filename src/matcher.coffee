@@ -3,27 +3,30 @@
 # of indexes instead of a score.
 
 PathSeparator = require('path').sep
+scorer = require './scorer'
+
 
 exports.basenameMatch = (string, query) ->
-  index = string.length - 1
-  index-- while string[index] is PathSeparator # Skip trailing slashes
-  slashCount = 0
-  lastCharacter = index
-  base = null
-  while index >= 0
-    if string[index] is PathSeparator
-      slashCount++
-      base ?= string.substring(index + 1, lastCharacter + 1)
-    else if index is 0
-      if lastCharacter < string.length - 1
-        base ?= string.substring(0, lastCharacter + 1)
-      else
-        base ?= string
-    index--
 
-  exports.match(base, query, string.length - base.length)
+  # Skip trailing slashes
+  end = string.length - 1
+  end-- while string[end] is PathSeparator
+
+  # Get position of basePath of string. If no PathSeparator, no base path exist.
+  basePos = string.lastIndexOf(PathSeparator, end)
+  return [] if (basePos == -1)
+
+  # Get basePath match
+  exports.match(string.substring(basePos + 1, end + 1), query, basePos+1)
+
 
 exports.match = (string, query, stringOffset=0) ->
+  return scorer.align(string, query, stringOffset)
+
+
+# Fast but greedy algorithm, IE it report the first occurrence of char
+# even if a latter occurrence will score more
+exports.fastMatch = (string, query, stringOffset=0) ->
   return [stringOffset...stringOffset + string.length] if string is query
 
   queryLength = query.length
@@ -50,3 +53,37 @@ exports.match = (string, query, stringOffset=0) ->
     string = string.substring(indexInString + 1, stringLength)
 
   matches
+
+
+#
+# Combine two matches result and remove duplicate
+# (Assume sequences are sorted, matches are sorted by construction.)
+#
+
+exports.mergeMatches = (a, b) ->
+
+  out = []
+  m = a.length
+  n = b.length
+
+  return a.slice() if n == 0
+  return b.slice() if m == 0
+
+  i = -1
+  j = 0
+  bj = b[0]
+
+  while ++i < m
+    ai = a[i]
+
+    while bj <= ai and ++j < n
+      if bj < ai
+        out.push bj
+      bj = b[j]
+
+    out.push ai
+
+  while j < n
+    out.push b[j++]
+
+  return out
