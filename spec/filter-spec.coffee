@@ -24,6 +24,11 @@ describe "filtering", ->
       candidates = ['Gruntfile', 'filter', 'bile']
       expect(bestMatch(candidates, 'file')).toBe 'Gruntfile'
 
+  describe "when subject match is not exactly query", ->
+    it "still find the proper candidate", ->
+    candidates = ['Gruntfile xx', 'filter xx', 'bile xx']
+    expect(bestMatch(candidates, 'filex')).toBe candidates[0]
+
   describe "when the entries contains slashes", ->
     it "weighs basename matches higher", ->
       candidates = [
@@ -31,12 +36,16 @@ describe "filtering", ->
         rootPath('foo', 'bar')
       ]
       expect(bestMatch(candidates, 'bar')).toBe candidates[1]
+      expect(bestMatch(candidates, 'br')).toBe candidates[1]
+
 
       candidates = [
         rootPath('bar', 'foo')
         rootPath('foo', 'bar', path.sep, path.sep, path.sep, path.sep, path.sep)
       ]
       expect(bestMatch(candidates, 'bar')).toBe candidates[1]
+      expect(bestMatch(candidates, 'br')).toBe candidates[1]
+
 
       candidates = [
         rootPath('bar', 'foo')
@@ -79,7 +88,7 @@ describe "filtering", ->
       expect(bestMatch(candidate, "file")).toBe candidate[1]
       expect(bestMatch(candidate, "fle")).toBe candidate[1]
 
-    it "allow to search structure", ->
+    it "allow to folder path", ->
       candidate = [
         path.join('base', 'file'),
         path.join('bar', 'file')
@@ -94,7 +103,7 @@ describe "filtering", ->
         rootPath('test', 'filter', 'test.js')
         rootPath('filter', 'test', 'filter.js')
       ]
-      #expect(bestMatch(candidates, path.join('test','filt')  )).toBe candidates[1]
+      #expect(bestMatch(candidates, path.join('test','filt')  )).toBe candidates[1] ?
       expect(bestMatch(candidates, path.join('test','filt.') )).toBe candidates[1]
 
   describe "when the candidate is all slashes", ->
@@ -128,6 +137,8 @@ describe "filtering", ->
         path.join('app', 'models', 'table.rb')
       ]
       expect(bestMatch(candidates, 'table')).toBe candidates[1]
+      expect(bestMatch(candidates, 'tble')).toBe candidates[1]
+
 
   describe "when the entries contains mixed case", ->
 
@@ -143,13 +154,12 @@ describe "filtering", ->
     it "weighs exact case matches higher even if string is longer", ->
       candidates = ['Diagnostic', 'diagnostics0000']
       expect(bestMatch(candidates, 'diag')).toBe candidates[1]
-
+      expect(bestMatch(candidates, 'diags')).toBe candidates[1]
 
     it "weighs abbreviation matches after spaces, underscores, and dashes the same", ->
       expect(bestMatch(['sub-zero', 'sub zero', 'sub_zero'], 'sz')).toBe 'sub-zero'
       expect(bestMatch(['sub zero', 'sub_zero', 'sub-zero'], 'sz')).toBe 'sub zero'
       expect(bestMatch(['sub_zero', 'sub-zero', 'sub zero'], 'sz')).toBe 'sub_zero'
-
 
     it "weighs abbreviation higher than scattered letter in a smaller word (also not greeddy)", ->
       candidates = [
@@ -204,6 +214,9 @@ describe "filtering", ->
         'thisCamelCase000',
       ]
       expect(bestMatch(candidates, 'CC')).toBe candidates[1]
+      expect(bestMatch(candidates, 'CCa')).toBe candidates[1]
+      expect(bestMatch(candidates, 'CCe')).toBe candidates[1]
+
 
     it "prefer CamelCase in shorter haystack", ->
 
@@ -212,6 +225,8 @@ describe "filtering", ->
         'CamelCase',
       ]
       expect(bestMatch(candidates, 'CC')).toBe candidates[1]
+      expect(bestMatch(candidates, 'CCa')).toBe candidates[1]
+      expect(bestMatch(candidates, 'CCe')).toBe candidates[1]
 
     it "prefer uninterrupted sequence CamelCase", ->
 
@@ -220,6 +235,9 @@ describe "filtering", ->
         'CamelCaseSkipped',
       ]
       expect(bestMatch(candidates, 'CC')).toBe candidates[1]
+      expect(bestMatch(candidates, 'CCa')).toBe candidates[1]
+      expect(bestMatch(candidates, 'CCe')).toBe candidates[1]
+
 
   describe "when the entries are of differing directory depths", ->
     it "places exact matches first, even if they're deeper", ->
@@ -278,3 +296,4 @@ describe "filtering", ->
     ]
     expect(bestMatch(candidates, 'push')).toBe 'Git Plus: Push'
     expect(bestMatch(['a_b_c', 'somethingabc'], 'abc')).toBe 'somethingabc'
+    expect(bestMatch(['a_b_c x', 'somethingabc x'], 'abcx')).toBe 'somethingabc x'

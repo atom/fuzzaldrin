@@ -12,17 +12,17 @@
 # https://github.com/joshaven/string_score/
 
 
-wm = 100 # base score of making a match
-wc = 100 # bonus for proper case
+wm = 10 # base score of making a match
+wc = 20 # bonus for proper case
 
-wa = 300 # bonus of making an acronym match (Start of Accronym *3 then consecutive *2 )
-ws = 200 # bonus of making a separator match
+wa = 30 # bonus of making an acronym match
+ws = 20 # bonus of making a separator match
 
-wo = -100 # penalty to open a gap
+wo = -10 # penalty to open a gap
 we = -1 # penalty to continue an open gap (inside a match)
 
-wst = 100 # bonus for match near start of string
-wex = 600 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
+wst = 10 # bonus for match near start of string
+wex = 100 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
 
 #
 # Fading function
@@ -116,8 +116,10 @@ exports.score = score = (subject, query) ->
     else
       #test for camelCase
       camel = camelPrefix(subject, subject_lw, query, query_lw)
-      nbc =  camel[0]
-      exact += 1.5 * wex * nbc * nbc * (1.0 + tau / (tau + camel[1]))
+      camelCount =  camel[2]
+      if camelCount > 1 #don't count a single capital as camel
+        camelBonus =  camel[0]
+        exact += 1.5 * wex * camelBonus * camelBonus * (1.0 + tau / (tau + camel[1]))
 
     return exact * sz
 
@@ -130,12 +132,15 @@ exports.score = score = (subject, query) ->
 
   #test for camelCase
   camel = camelPrefix(subject, subject_lw, query, query_lw)
-  nbc =  camel[0]
-  exact = 5 * wex * nbc * nbc * (1.0 + tau / (tau + camel[1]))
+  camelCount =  camel[2]
+  exact = 0
+  if camelCount > 1
+    camelBonus =  camel[0]
+    exact += 5 * wex * camelBonus * camelBonus * (1.0 + tau / (tau + camel[1]))
 
-  #Whole query is camelCase abbreviation ? then => bypass
-  if(nbc >= query.length)
-    return exact * sz
+    #Whole query is camelCase abbreviation ? then => bypass
+    if( camelCount == query.length)
+      return exact * sz
 
   #----------------------------
   # Individual chars
@@ -173,11 +178,13 @@ exports.score = score = (subject, query) ->
       #Compute a tentative match
       if ( query_lw[i - 1] == subject_lw[j - 1] )
 
-        csc = if seq_diag == 0 then 1 + countConsecutive(query_lw, subject_lw, i , j ) else  seq_diag
+        #forward search for a sequence of consecutive char (will apply some bonus for exact casing or exact match)
+        csc = if seq_diag == 0 then countConsecutive(query, query_lw, subject, subject_lw, i-1 , j-1 ) else  seq_diag
         seq_diag = seqRow[j]
         seqRow[j] = csc
 
-        align =  v_diag + csc*scoreMatchingChar(query, subject, i - 1, j - 1, nbc)
+        #determine bonus for matching A[i-1] with B[j-1]
+        align =  v_diag + csc*scoreMatchingChar(query, subject, i - 1, j - 1, camelBonus)
 
       else
         seq_diag = seqRow[j]
@@ -242,6 +249,7 @@ camelPrefix = (subject, subject_lw, query, query_lw) ->
 
   count = 0
   pos = 0
+  sameCase = 0
 
   i = -1
   j = -1
@@ -263,24 +271,26 @@ camelPrefix = (subject, subject_lw, query, query_lw) ->
       else if( qi_lw == sj_lw )
 
         #record position
-        pos = j if count == 0
+        #pos = j if count == 0
+        pos += j
 
         #Is Query Uppercase too ?
         qi = query[i]
-        count += if( qi == qi.toUpperCase() ) then 2 else 1
+        count++
+        sameCase++ if( qi == qi.toUpperCase() )
 
         break
 
       #End of subject
-      if j == k then return [count, pos]
+      if j == k then return [count+sameCase, pos / (count + 1), count]
 
       else
         # Skipped a CamelCase candidate...
         # Lower quality of the match by increasing first match pos
-        pos+=2
+        pos+=3
 
   #end of query
-  return [count, pos]
+  return [count+sameCase, pos / (count + 1), count]
 
 #
 # filer query until we only get required char
@@ -327,17 +337,26 @@ exports.isMatch = isMatch = (subject, query) ->
 # Count consecutive
 #
 
-countConsecutive = (a, b, i , j ) ->
+countConsecutive = (query, query_lw, subject, subject_lw, i , j ) ->
 
-  m = a.length - i
-  n = b.length - j
-  k = if m<n then m else n
+  m = query.length
+  dm = query.length - i
+  dn = subject.length - j
+  k = if dm<dn then dm else dn
+
+  sameCase = 0
 
   f=-1
-  while (++f<k and a[i+f] == b[j+f])
-    continue
+  while (++f<k and query_lw[i+f] == subject_lw[j+f])
+    if (query[i+f] == subject[j+f]) then sameCase++
 
-  return f
+  # exact match bonus (like score IndexOf)
+  if sameCase == m
+    return 5*m
+  if f==m
+    return 2*(f+sameCase)
+  else
+    return f+sameCase
 
 
 
@@ -360,13 +379,11 @@ exports.basenameScore = (string, query, fullPathScore) ->
   basePathScore = score(string.substring(basePos + 1, end + 1), query)
 
   # We'll merge some of that base path score with full path score.
-  # Mix start favoring basepath then favor full path as directory depth increase
-  # Note that basepath test are more nested than original, so we have to compensate one level of nesting.
+  # Mix start favoring base Path then favor full path as directory depth increase
+  # Note that base Path test are more nested than original, so we have to compensate one level of nesting.
 
   alpha = 0.5 * 2*tau / ( 2*tau + countDir(string, end + 1) )
-  fullPathScore = alpha * basePathScore + (1 - alpha) * fullPathScore
-
-  return fullPathScore
+  return  alpha * basePathScore + (1 - alpha) * fullPathScore
 
 #
 # Count number of folder in a path.
@@ -476,14 +493,9 @@ exports.align = (subject, query, offset = 0) ->
       if ( query_lw[i - 1] == subject_lw[j - 1] )
 
         if seq_diag == 0
-          #forward search for a sequence of consecutive char
-          csc =  1 + countConsecutive(query_lw, subject_lw, i , j )
 
-          # exact case-insensitive match bonus (like score IndexOf)
-          # advantage vs indexOf is natural handing multiple occurrence of that pattern
-          if csc == m-1
-            #additional bonus for case-sensitive exact
-            csc *= if subject.substr(j - 1,csc) == query then 3 else 2
+          #forward search for a sequence of consecutive char (will apply some bonus for exact casing or exact match)
+          csc =  countConsecutive(query, query_lw, subject, subject_lw, i-1 , j-1 )
 
         else
           # Verify that previous char is a Match before applying sequence bonus.

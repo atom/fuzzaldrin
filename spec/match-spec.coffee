@@ -32,6 +32,11 @@ describe "match(string, query)", ->
     expect(match('fiddle file', 'file')).toEqual [ 7, 8, 9, 10]
     expect(match('find le file', 'file')).toEqual [ 8, 9, 10, 11]
 
+  it "prefer whole word to scattered letters, even without exact matches", ->
+    expect(match('fiddle gruntfile xfiller', 'filex')).toEqual [ 12, 13, 14,15, 17]
+    expect(match('fiddle file xfiller', 'filex')).toEqual [ 7, 8, 9, 10, 12]
+    expect(match('find le file xfiller', 'filex')).toEqual [ 8, 9, 10, 11, 13]
+
   it "prefer exact match", ->
     expect(match('filter gruntfile filler', 'file')).toEqual [ 12, 13, 14, 15]
 
@@ -52,6 +57,7 @@ describe "match(string, query)", ->
   it "account for case in selecting camelCase vs consecutive", ->
     expect(match('0xACACAC: CamelControlClass.ccc', 'CCC')).toEqual [ 10, 15, 22]
     expect(match('0xACACAC: CamelControlClass.ccc', 'ccc')).toEqual [ 28, 29, 30]
+    expect(match('0xACACAC: CamelControlClass.ccc xfiller', 'cccx')).toEqual [ 28, 29, 30, 32]
     expect(match('0xACACAC: CamelControlClass', 'ccc')).toEqual [ 10, 15, 22]
 
 
