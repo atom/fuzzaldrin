@@ -2,7 +2,7 @@
 # Score similarity between two string
 #
 #  isMatch: Fast detection if all character of needle is in haystack
-#  score: Find string similarity using a Smith Waterman Gotoh algorithm
+#  score: Find string similarity using a Smith Waterman algorithm
 #         Modified to account for programing scenarios (CamelCase folder/file.ext object.property)
 #
 # Copyright (C) 2015 Jean Christophe Roy and contributors
@@ -18,8 +18,7 @@ wc = 20 # bonus for proper case
 wa = 30 # bonus of making an acronym match
 ws = 20 # bonus of making a separator match
 
-wo = -10 # penalty to open a gap
-we = -1 # penalty to continue an open gap (inside a match)
+we = -1 # penalty to skip a letter inside a match (vs free to skip around the match)
 
 wst = 10 # bonus for match near start of string
 wex = 100 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
@@ -172,8 +171,8 @@ exports.score = score = (subject, query) ->
     while ++j < n   #foreach char of subject
 
       #Compute the cost of making a gap
-      gapA = gapARow[j] = Math.max(gapARow[j] + we, vRow[j] + wo)
-      gapB = Math.max(gapB + we, vRow[j - 1] + wo)
+      gapA = vRow[j] + we
+      gapB = vRow[j - 1] + we
 
       #Compute a tentative match
       if ( query_lw[i - 1] == subject_lw[j - 1] )
@@ -486,8 +485,8 @@ exports.align = (subject, query, offset = 0) ->
       # And so are all penalty. (Encourage matching, discourage non matching)
 
       #Compute the cost of making a gap
-      gapA = gapARow[j] = Math.max(gapARow[j] + we, vRow[j] + wo)
-      gapB = Math.max(gapB + we, vRow[j - 1] + wo)
+      gapA = vRow[j] + we
+      gapB = vRow[j - 1] + we
 
       #Compute a tentative match
       if ( query_lw[i - 1] == subject_lw[j - 1] )
