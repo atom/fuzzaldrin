@@ -12,16 +12,18 @@
 # https://github.com/joshaven/string_score/
 
 
-wm = 10 # base score of making a match
-wc = 20 # bonus for proper case
+wm = 100 # base score of making a match
+wc = 200 # bonus for proper case
 
-wa = 30 # bonus of making an acronym match
-ws = 20 # bonus of making a separator match
+wa = 300 # bonus of making an acronym match
+ws = 200 # bonus of making a separator match
 
-we = -1 # penalty to skip a letter inside a match (vs free to skip around the match)
+we = -10 # penalty to skip a letter inside a match (vs free to skip around the match)
 
-wst = 10 # bonus for match near start of string
-wex = 100 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
+wst = 100 # bonus for match near start of string
+wex = 1000 # bonus per character of an exact match. If exact coincide with prefix, bonus will be 2*wex, then it'll fade to 1*wex as string happens later.
+
+#Note: extra zeros are there to allow rounding the fading bonus function to an integer value.
 
 #
 # Fading function
@@ -147,32 +149,24 @@ exports.score = score = (subject, query) ->
 
   #Init
   vRow = new Array(n)
-  gapARow = new Array(n)
   seqRow = new Array(n)
-  gapA = 0
-  gapB = 0
   vmax = 0
 
   #Fill with 0
   j = -1
   while ++j < n
-    gapARow[j] = 0
     vRow[j] = 0
     seqRow[j] = 0
 
   i = 0 #1..m-1
   while ++i < m     #foreach char of query
 
-    gapB = 0
     v_diag = vRow[0]
     seq_diag = seqRow[0]
 
     j = 0 #1..n-1
     while ++j < n   #foreach char of subject
 
-      #Compute the cost of making a gap
-      gapA = vRow[j] + we
-      gapB = vRow[j - 1] + we
 
       #Compute a tentative match
       if ( query_lw[i - 1] == subject_lw[j - 1] )
@@ -190,12 +184,11 @@ exports.score = score = (subject, query) ->
         seqRow[j] = 0
         align = 0
 
-
-      #Get the best option (align set the lower-bound to 0)
+      #Compare the score of making a match, a gap in Query (A), or a gap in Subject (B)
       v_diag = vRow[j]
-      v = vRow[j] = Math.max(align, gapA, gapB)
+      v = vRow[j] = Math.max(align, vRow[j] + we, vRow[j - 1] + we)
 
-      #Record best score
+      #Record the best score so far
       if v > vmax
         vmax = v
 
@@ -437,10 +430,7 @@ exports.align = (subject, query, offset = 0) ->
 
   #Init
   vRow = new Array(n)
-  gapARow = new Array(n)
   seqRow = new Array(n)
-  gapA = 0
-  gapB = 0
   vmax = 0
   imax = -1
   jmax = -1
@@ -452,7 +442,6 @@ exports.align = (subject, query, offset = 0) ->
   #Fill with 0
   j = -1
   while ++j < n
-    gapARow[j] = 0
     vRow[j] = 0
     seqRow[j] = 0
     trace[j] = STOP
@@ -484,9 +473,6 @@ exports.align = (subject, query, offset = 0) ->
       # We also keep track of match context. If we are inside a run of consecutive matches, all bonuses are increased
       # And so are all penalty. (Encourage matching, discourage non matching)
 
-      #Compute the cost of making a gap
-      gapA = vRow[j] + we
-      gapB = vRow[j - 1] + we
 
       #Compute a tentative match
       if ( query_lw[i - 1] == subject_lw[j - 1] )
@@ -511,10 +497,10 @@ exports.align = (subject, query, offset = 0) ->
         seqRow[j] = 0
         align = 0
 
-
+      #Compare the score of making a match, a gap in Query (A), or a gap in Subject (B)
       v_diag = vRow[j]
-
-      #Get the best option (align set the lower-bound to 0)
+      gapA = vRow[j] + we
+      gapB =  vRow[j - 1] + we
       v = vRow[j] = Math.max(align, gapA, gapB)
 
       # what triggered the best score ?
