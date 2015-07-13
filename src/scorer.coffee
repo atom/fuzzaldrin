@@ -145,7 +145,7 @@ exports.score = score = (subject, query) ->
 
   #----------------------------
   # Individual chars
-  # (Smith Waterman Gotoh algorithm)
+  # (Smith Waterman algorithm)
 
   #Init
   vRow = new Array(n)
