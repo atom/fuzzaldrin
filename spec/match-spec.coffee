@@ -33,7 +33,14 @@ describe "match(string, query)", ->
     expect(match('find le file', 'file')).toEqual [ 8, 9, 10, 11]
 
   it "prefer exact match", ->
-    expect(match('filter gruntfile filler', 'file')).toEqual [ 12, 13, 14,15]
+    expect(match('filter gruntfile filler', 'file')).toEqual [ 12, 13, 14, 15]
+
+  it "prefer case sensitive exact match", ->
+    expect(match('ccc CCC cCc CcC CCc', 'ccc')).toEqual [ 0, 1, 2]
+    expect(match('ccc CCC cCc CcC CCc', 'CCC')).toEqual [ 4, 5, 6]
+    expect(match('ccc CCC cCc CcC CCc', 'cCc')).toEqual [ 8, 9, 10]
+    expect(match('ccc CCC cCc CcC CCc', 'CcC')).toEqual [ 12, 13, 14]
+    expect(match('ccc CCC cCc CcC CCc', 'CCc')).toEqual [ 16, 17, 18]
 
   it "prefer camelCase to scattered letters", ->
     expect(match('ImportanceTableCtrl', 'itc')).toEqual [0,10,15]

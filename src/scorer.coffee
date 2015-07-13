@@ -480,8 +480,11 @@ exports.align = (subject, query, offset = 0) ->
           csc =  1 + countConsecutive(query_lw, subject_lw, i , j )
 
           # exact case-insensitive match bonus (like score IndexOf)
-          # advantage vs indexOf is handing multiple occurrence of that pattern
-          csc *= 2 if csc == m-1
+          # advantage vs indexOf is natural handing multiple occurrence of that pattern
+          if csc == m-1
+            #additional bonus for case-sensitive exact
+            csc *= if subject.substr(j - 1,csc) == query then 3 else 2
+
         else
           # Verify that previous char is a Match before applying sequence bonus.
           # (this is not done for score because we don't keep trace)
