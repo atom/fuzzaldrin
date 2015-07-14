@@ -351,7 +351,6 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
   while ++i < m
 
     qi_lw = query_lw[i]
-
     while ++j < n
 
       sj = subject[j]
@@ -383,6 +382,9 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
 
       else if sj of sep_map
         followSeparator = true
+
+    #all of subject is consumed.
+    if j==k then break
 
 
   #a single char is not an acronym
