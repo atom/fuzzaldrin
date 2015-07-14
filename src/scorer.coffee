@@ -315,9 +315,9 @@ countConsecutive = (query, query_lw, subject, subject_lw, i, j) ->
 
   # exact match bonus (like score IndexOf)
   if sameCase == m
-    return 6 * m
+    return 6 * (m)
   if sz == m
-    return 2 * (sz + sameCase)
+    return 2 * (sz + sameCase )
   else
     return sz + sameCase
 

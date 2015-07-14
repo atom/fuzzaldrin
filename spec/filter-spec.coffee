@@ -292,12 +292,20 @@ describe "filtering", ->
       expect(result[4]).toBe candidates[0]
 
       #Even when we do not have an exact match
-      result = filter(candidates, 'instll')
+      result = filter(candidates, 'Instll')
       expect(result[0]).toBe candidates[4]
       expect(result[1]).toBe candidates[3]
       expect(result[2]).toBe candidates[2]
       expect(result[3]).toBe candidates[1]
       expect(result[4]).toBe candidates[0]
+
+      #Start of word VS proper case.
+      #result = filter(candidates, 'instll')
+      #expect(result[0]).toBe candidates[4]
+      #expect(result[1]).toBe candidates[3]
+      #expect(result[2]).toBe candidates[2]
+      #expect(result[3]).toBe candidates[1]
+      #expect(result[4]).toBe candidates[0]
 
     it "weighs substring higher than individual characters", ->
     candidates = [
