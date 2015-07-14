@@ -189,16 +189,15 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'fft.html')).toBe 'FilterFactorTests.html'
 
 
-    it "weighs CamelCase matches higher than middle of word exact matches, or snake_abbrv", ->
+    it "weighs Abbreviation matches higher than middle of word", ->
 
       candidates = [
         'switch.css',
-        'user_id_to_client',
+        'userid_to_client',
         'ImportanceTableCtrl.js'
       ]
       expect(bestMatch(candidates, 'itc')).toBe candidates[2]
       expect(bestMatch(candidates, 'ITC')).toBe candidates[2]
-      expect(bestMatch(candidates, 'itcl')).toBe candidates[2]
 
 
     it "account for case in CamelCase vs Substring matches", ->
@@ -299,13 +298,6 @@ describe "filtering", ->
       expect(result[3]).toBe candidates[1]
       expect(result[4]).toBe candidates[0]
 
-      #Start of word VS proper case.
-      #result = filter(candidates, 'instll')
-      #expect(result[0]).toBe candidates[4]
-      #expect(result[1]).toBe candidates[3]
-      #expect(result[2]).toBe candidates[2]
-      #expect(result[3]).toBe candidates[1]
-      #expect(result[4]).toBe candidates[0]
 
     it "weighs substring higher than individual characters", ->
     candidates = [
@@ -315,5 +307,5 @@ describe "filtering", ->
       'Git Plus: Show'
     ]
     expect(bestMatch(candidates, 'push')).toBe 'Git Plus: Push'
-    expect(bestMatch(['a_b_c', 'somethingabc'], 'abc')).toBe 'somethingabc'
-    expect(bestMatch(['a_b_c x', 'somethingabc x'], 'abcx')).toBe 'somethingabc x'
+    expect(bestMatch(['a0b0c', 'somethingabc'], 'abc')).toBe 'somethingabc'
+    expect(bestMatch(['a0b0c x', 'somethingabc x'], 'abcx')).toBe 'somethingabc x'

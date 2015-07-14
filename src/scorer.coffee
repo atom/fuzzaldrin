@@ -187,28 +187,25 @@ exports.score = score = (subject, query) ->
       exact += 2 * base
 
     else
-      #test for camelCase
-      camel = camelPrefix(query, query_lw, subject, subject_lw)
-      camelCount = camel[2]
-      if camelCount > 1 #don't count a single capital as camel
-        camelBonus = camel[0]
-        exact += 1.5 * wex * camelBonus * camelBonus * (1.0 + tau / (tau + camel[1]))
+      #test for abbreviation
+      abbr = abbrPrefix(query, query_lw, subject, subject_lw)
+      abbrBonus = abbr[0]
+      exact += 1.5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr[1]))
 
     return exact * sz
 
   #----------------------------
   # Abbreviations sequence
 
-  camel = camelPrefix(query, query_lw, subject, subject_lw)
-  camelCount = camel[2]
-  exact = 0
-  if camelCount > 1
-    camelBonus = camel[0]
-    exact += 5 * wex * camelBonus * camelBonus * (1.0 + tau / (tau + camel[1]))
+  abbr = abbrPrefix(query, query_lw, subject, subject_lw)
+  abbrCount = abbr[2]
+  abbrBonus = abbr[0]
 
-    #Whole query is camelCase abbreviation ? then => bypass
-    if( camelCount == query.length)
-      return exact * sz
+  exact = 5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr[1]))
+
+  #Whole query is abbreviation ? then => bypass
+  if( abbrCount == query.length)
+    return exact * sz
 
   #----------------------------
   # Individual chars
@@ -243,7 +240,7 @@ exports.score = score = (subject, query) ->
         seqRow[j] = csc
 
         #determine bonus for matching A[i-1] with B[j-1]
-        align = v_diag + csc * scoreMatchingChar(query, subject, i - 1, j - 1, camelBonus)
+        align = v_diag + csc * scoreMatchingChar(query, subject, i - 1, j - 1, abbrBonus)
 
       else
         seq_diag = seqRow[j]
@@ -265,7 +262,7 @@ exports.score = score = (subject, query) ->
 # Compute the bonuses for two chars that are confirmed to matches in a case-insensitive way
 #
 
-scoreMatchingChar = (query, subject, i, j, camelBonus) ->
+scoreMatchingChar = (query, subject, i, j, abbrBonus) ->
   qi = query[i]
   sj = subject[j]
 
@@ -278,17 +275,19 @@ scoreMatchingChar = (query, subject, i, j, camelBonus) ->
   #match IS a separator
   return ws + bonus if qi of sep_map
 
+  acn = wa * (1+abbrBonus)
+
   #match is FIRST char ( place a virtual token separator before first char of string)
-  return wa + bonus if  j == 0
+  return acn + bonus if  j == 0
 
   #get previous char
   prev_s = subject[j - 1]
 
   #match FOLLOW a separator
-  return wa + bonus if ( prev_s of sep_map)
+  return acn + bonus if ( prev_s of sep_map)
 
   #match is Capital in camelCase (preceded by lowercase)
-  return (1 + camelBonus) * wa + bonus if (sj == sj.toUpperCase() and prev_s == prev_s.toLowerCase())
+  return acn + bonus if (sj == sj.toUpperCase() and prev_s == prev_s.toLowerCase())
 
   #normal Match, add proper case bonus
   return wm + bonus
@@ -315,7 +314,7 @@ countConsecutive = (query, query_lw, subject, subject_lw, i, j) ->
 
   # exact match bonus (like score IndexOf)
   if sameCase == m
-    return 6 * (m)
+    return 8 * (m)
   if sz == m
     return 2 * (sz + sameCase )
   else
@@ -323,12 +322,18 @@ countConsecutive = (query, query_lw, subject, subject_lw, i, j) ->
 
 
 #
-# Count the number of camelCase prefix
-# Note that case insensitive character such as space will count as lowercase.
-# So this handle both "CamelCase" and "Title Case"
+# Count the number of abbreviation prefix
+# Normal char use help of a matching context to determine which one should we take.
+# That context is basically the length of the consecutive run they are part of.
+#
+# This mirror the idea of consecutive run length,
+# but compute consecutive of the abbreviated match
+# ThisIsTest -> tst
+#
+# This handle "CamelCase" , "Title Case" "snake_case"
 #
 
-camelPrefix = (query, query_lw, subject, subject_lw) ->
+abbrPrefix = (query, query_lw, subject, subject_lw) ->
   m = query.length
   n = subject.length
 
@@ -340,6 +345,9 @@ camelPrefix = (query, query_lw, subject, subject_lw) ->
   j = -1
   k = n - 1
 
+  #virtual separator before first char of the string
+  followSeparator = true
+
   while ++i < m
 
     qi_lw = query_lw[i]
@@ -349,33 +357,39 @@ camelPrefix = (query, query_lw, subject, subject_lw) ->
       sj = subject[j]
       sj_lw = subject_lw[j]
 
-      #Lowecase, continue
-      if(sj == sj_lw) then continue
+      #If uppercase or after a separator character
+      if(sj != sj_lw or followSeparator)
 
-      else if( qi_lw == sj_lw )
-        #Subject Uppercase, is it a match ?
+        followSeparator = false
 
-        #record position
-        #pos = j if count == 0
-        pos += j
+        #is it a match ?
+        if( qi_lw == sj_lw )
 
-        #Is Query Uppercase too ?
-        qi = query[i]
-        count++
-        sameCase++ if( qi == qi.toUpperCase() )
+          #record position
+          #pos = j if count == 0
+          pos += j
 
-        break
+          #Is Query Uppercase too ?
+          qi = query[i]
+          count++
+          sameCase++ if( qi == qi.toUpperCase() )
 
-      #End of subject
-      if j == k then return [count + sameCase, pos / (count + 1), count]
+          break
 
-      else
-        # Skipped a CamelCase candidate...
-        # Lower quality of the match by increasing first match pos
-        pos += 3
+        else
+          # Skipped a CamelCase candidate...
+          # Lower quality of the match by increasing first match pos
+          pos += 3
 
-  #end of query
-  return [count + sameCase, pos / (count + 1), count]
+      else if sj of sep_map
+        followSeparator = true
+
+
+  #a single char is not an acronym
+  if(count < 2)
+    return [0,0,0]
+
+  return [count + sameCase, pos/count, count]
 
 
 #----------------------------------------------------------------------
@@ -393,7 +407,7 @@ exports.align = (subject, query, offset = 0) ->
   query_lw = query.toLowerCase()
 
   #this is like the consecutive bonus, but for scattered camelCase initials
-  nbc = camelPrefix(query, query_lw, subject, subject_lw)[0]
+  nbc = abbrPrefix(query, query_lw, subject, subject_lw)[0]
 
   #Init
   vRow = new Array(n)
