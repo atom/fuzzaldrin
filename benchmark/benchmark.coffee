@@ -10,6 +10,11 @@ results = filter(lines, 'index')
 console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results.length} results")
 
 startTime = Date.now()
+results2 = filter(lines, 'index', {legacy:true})
+console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results2.length} results (Legacy method)")
+
+
+startTime = Date.now()
 match(line, 'index') for line in lines
 console.log("Matching #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results.length} results")
 

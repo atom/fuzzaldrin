@@ -24,37 +24,6 @@ exports.match = (string, query, stringOffset=0) ->
   return scorer.align(string, query, stringOffset)
 
 
-# Fast but greedy algorithm, IE it report the first occurrence of char
-# even if a latter occurrence will score more
-exports.fastMatch = (string, query, stringOffset=0) ->
-  return [stringOffset...stringOffset + string.length] if string is query
-
-  queryLength = query.length
-  stringLength = string.length
-
-  indexInQuery = 0
-  indexInString = 0
-
-  matches = []
-
-  while indexInQuery < queryLength
-    character = query[indexInQuery++]
-    lowerCaseIndex = string.indexOf(character.toLowerCase())
-    upperCaseIndex = string.indexOf(character.toUpperCase())
-    minIndex = Math.min(lowerCaseIndex, upperCaseIndex)
-    minIndex = Math.max(lowerCaseIndex, upperCaseIndex) if minIndex is -1
-    indexInString = minIndex
-    return [] if indexInString is -1
-
-    matches.push(stringOffset + indexInString)
-
-    # Trim string to after current abbreviation match
-    stringOffset += indexInString + 1
-    string = string.substring(indexInString + 1, stringLength)
-
-  matches
-
-
 #
 # Combine two matches result and remove duplicate
 # (Assume sequences are sorted, matches are sorted by construction.)

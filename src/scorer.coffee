@@ -7,9 +7,6 @@
 #
 # Copyright (C) 2015 Jean Christophe Roy and contributors
 # MIT License: http://opensource.org/licenses/MIT
-#
-# Previous version of scorer used string_score from Joshaven Potter
-# https://github.com/joshaven/string_score/
 
 
 wm = 100 # base score of making a match
