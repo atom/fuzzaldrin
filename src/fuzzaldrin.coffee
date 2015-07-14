@@ -11,7 +11,7 @@ module.exports =
   score: (string, query, {allowErrors}={}) ->
     return 0 unless string
     return 0 unless query
-    return 0 unless !!allowErrors or scorer.isMatch(string,query)
+    return 0 unless allowErrors or scorer.isMatch(string,query)
 
     #get "file.ext" from "folder/file.ext"
     pos = query.indexOf(PathSeparator)
@@ -26,8 +26,7 @@ module.exports =
     return [] unless string
     return [] unless query
     return [0...string.length] if string is query
-
-    return [] unless !!allowErrors or scorer.isMatch(string,query)
+    return [] unless allowErrors or scorer.isMatch(string,query)
 
     #get "file.ext" from "folder/file.ext"
     pos = query.indexOf(PathSeparator)
