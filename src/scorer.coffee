@@ -334,6 +334,7 @@ countConsecutive = (query, query_lw, subject, subject_lw, i, j) ->
 #
 
 abbrPrefix = (query, query_lw, subject, subject_lw) ->
+
   m = query.length
   n = subject.length
 
@@ -345,49 +346,45 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
   j = -1
   k = n - 1
 
-  #virtual separator before first char of the string
-  followSeparator = true
 
   while ++i < m
 
     qi_lw = query_lw[i]
+
     while ++j < n
 
-      sj = subject[j]
       sj_lw = subject_lw[j]
 
-      #If uppercase or after a separator character
-      if(sj != sj_lw or followSeparator)
+      #we have a match
+      if(qi_lw == sj_lw)
 
-        followSeparator = false
+        sj = subject[j]
 
-        #is it a match ?
-        if( qi_lw == sj_lw )
+        # Is it CamelCase ?
+        # 1) sj is Uppercase ( different from sj.toLowerCase() ) AND
+        # 2) j is first char or lowercase
+        #
+        # Is it snake_case ?
+        # 1) j is first char or subject[j-1] is separator
 
-          #record position
-          #pos = j if count == 0
+        prev_s = if j==0 then '' else subject[j-1]
+
+        if  j==0  or ( prev_s of sep_map ) or  (sj != sj_lw and prev_s == subject_lw[j-1] )
+
+          #record position and increase count
           pos += j
-
-          #Is Query Uppercase too ?
-          qi = query[i]
           count++
-          sameCase++ if( qi == qi.toUpperCase() )
+
+          #Is it sameCase ?
+          sameCase++ if ( query[i] == sj )
 
           break
-
-        else
-          # Skipped a CamelCase candidate...
-          # Lower quality of the match by increasing first match pos
-          pos += 3
-
-      else if sj of sep_map
-        followSeparator = true
 
     #all of subject is consumed.
     if j==k then break
 
-
-  #a single char is not an acronym
+  #all of query is consumed.
+  #a single char is not an acronym (also prevent division by 0)
   if(count < 2)
     return [0,0,0]
 
