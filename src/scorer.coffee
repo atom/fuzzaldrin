@@ -15,7 +15,7 @@
 wm = 100 # base score of making a match
 wc = 200 # bonus for proper case
 
-wa = 300 # bonus of making an acronym match
+wa = 400 # bonus of making an acronym match
 ws = 200 # bonus of making a separator match
 
 we = -10 # penalty to skip a letter inside a match (vs free to skip around the match)
@@ -315,7 +315,7 @@ countConsecutive = (query, query_lw, subject, subject_lw, i, j) ->
 
   # exact match bonus (like score IndexOf)
   if sameCase == m
-    return 5 * m
+    return 6 * m
   if sz == m
     return 2 * (sz + sameCase)
   else

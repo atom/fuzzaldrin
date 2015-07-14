@@ -186,6 +186,8 @@ describe "filtering", ->
       ]
       expect(bestMatch(candidates, 'FFT')).toBe 'FilterFactorTests.html'
       expect(bestMatch(candidates, 'fft')).toBe 'FilterFactorTests.html'
+      expect(bestMatch(candidates, 'fft.html')).toBe 'FilterFactorTests.html'
+
 
     it "weighs CamelCase matches higher than middle of word exact matches, or snake_abbrv", ->
 
@@ -196,6 +198,7 @@ describe "filtering", ->
       ]
       expect(bestMatch(candidates, 'itc')).toBe candidates[2]
       expect(bestMatch(candidates, 'ITC')).toBe candidates[2]
+      expect(bestMatch(candidates, 'itcl')).toBe candidates[2]
 
 
     it "account for case in CamelCase vs Substring matches", ->
@@ -272,6 +275,7 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'actionsServiceSpec.js')).toBe candidates[1]
 
   describe "When multiple result can match", ->
+
     it "returns the result in order", ->
       candidates = [
         'Find And Replace: Selet All',
@@ -281,6 +285,14 @@ describe "filtering", ->
         'install'
       ]
       result = filter(candidates, 'install')
+      expect(result[0]).toBe candidates[4]
+      expect(result[1]).toBe candidates[3]
+      expect(result[2]).toBe candidates[2]
+      expect(result[3]).toBe candidates[1]
+      expect(result[4]).toBe candidates[0]
+
+      #Even when we do not have an exact match
+      result = filter(candidates, 'instll')
       expect(result[0]).toBe candidates[4]
       expect(result[1]).toBe candidates[3]
       expect(result[2]).toBe candidates[2]
