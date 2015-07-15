@@ -6,9 +6,14 @@ sortCandidates = (a, b) -> b.score - a.score
 PathSeparator = require('path').sep
 
 
-module.exports = (candidates, query, {key, maxResults, allowErrors, legacy }={}) ->
+module.exports = (candidates, query, {key, maxResults, maxInners, allowErrors, legacy }={}) ->
   if query
     scoredCandidates = []
+
+    # when query is to generic to select a few case, do reasonable effort to process results
+    # then return to user to let him precise the query. (consider that many positive candidate
+    # one the working list before going to sort and output maxResults best ones )
+    spotLeft = if maxInners>0 then maxInners else candidates.length
 
     # allow any character of query to be optional (but better score if they are present)
     allowErrorsInQuery = !!allowErrors
@@ -26,7 +31,9 @@ module.exports = (candidates, query, {key, maxResults, allowErrors, legacy }={})
         continue unless string and ( allowErrorsInQuery or scorer.isMatch(string,coreQuery) )
         score = scorer.score(string, query)
         score = scorer.basenameScore(string, baseQuery, score)
-        scoredCandidates.push({candidate, score}) if score > 0
+        if score > 0
+          scoredCandidates.push({candidate, score})
+          break unless --spotLeft
 
     else
       queryHasSlashes = pos > -1

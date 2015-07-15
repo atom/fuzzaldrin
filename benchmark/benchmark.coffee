@@ -1,7 +1,7 @@
 fs = require 'fs'
 path = require 'path'
 
-{filter, match} = require '../lib/fuzzaldrin'
+{filter, match} = require '../src/fuzzaldrin'
 
 lines = fs.readFileSync(path.join(__dirname, 'data.txt'), 'utf8').trim().split('\n')
 
@@ -28,16 +28,22 @@ console.log("Filtering #{lines.length} entries for 'node' took #{Date.now() - st
 console.log("======")
 
 startTime = Date.now()
-results5 = filter(lines, 'nde')
-console.log("Filtering #{lines.length} entries for 'nde' took #{Date.now() - startTime}ms for #{results5.length} results (~98% of results are positive, Fuzzy match, [Worst case scenario])")
-
-startTime = Date.now()
 results6 = filter(lines, 'indx')
 console.log("Filtering #{lines.length} entries for 'indx' took #{Date.now() - startTime}ms for #{results6.length} results (~10% of results are positive, Fuzzy match)")
 
 startTime = Date.now()
 results7 = filter(lines, 'nm')
 console.log("Filtering #{lines.length} entries for 'nm' took #{Date.now() - startTime}ms for #{results7.length} results (~98% of results are positive, Acronym)")
+
+console.log("======")
+
+startTime = Date.now()
+results5 = filter(lines, 'nde')
+console.log("Filtering #{lines.length} entries for 'nde' took #{Date.now() - startTime}ms for #{results5.length} results (~98% of results are positive, Fuzzy match, [Worst case scenario])")
+
+startTime = Date.now()
+results8 = filter(lines, 'nde', {maxInners:5000})
+console.log("Filtering #{lines.length} entries for 'nde' took #{Date.now() - startTime}ms for #{results8.length} results (Worst case mitigation strategy)")
 
 console.log("======")
 
