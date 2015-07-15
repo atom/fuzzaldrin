@@ -39,14 +39,9 @@ PathSeparator = require('path').sep
 
 #Save above separator in a dictionary for quick lookup
 sep_map = do ->
-
   map = {}
-  k = -1
-  len = separators.length
-  while ++k < len
-    map[separators[k]] = k
-
-  map
+  map[sep] = sep for sep in separators
+  return map
 
 
 # Optional chars
