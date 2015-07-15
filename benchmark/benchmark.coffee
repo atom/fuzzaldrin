@@ -9,7 +9,7 @@ console.log("======")
 
 startTime = Date.now()
 results = filter(lines, 'index')
-console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results.length} results (~10% of results are positive)")
+console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results.length} results (~10% of results are positive, mix exact & fuzzy)")
 
 startTime = Date.now()
 results2 = filter(lines, 'index', {legacy:true})
@@ -34,6 +34,10 @@ console.log("Filtering #{lines.length} entries for 'nde' took #{Date.now() - sta
 startTime = Date.now()
 results6 = filter(lines, 'indx')
 console.log("Filtering #{lines.length} entries for 'indx' took #{Date.now() - startTime}ms for #{results6.length} results (~10% of results are positive, Fuzzy match)")
+
+startTime = Date.now()
+results7 = filter(lines, 'nm')
+console.log("Filtering #{lines.length} entries for 'nm' took #{Date.now() - startTime}ms for #{results7.length} results (~98% of results are positive, Acronym)")
 
 console.log("======")
 
