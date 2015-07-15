@@ -5,6 +5,8 @@ path = require 'path'
 
 lines = fs.readFileSync(path.join(__dirname, 'data.txt'), 'utf8').trim().split('\n')
 
+console.log("======")
+
 startTime = Date.now()
 results = filter(lines, 'index')
 console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results.length} results (~10% of results are positive)")
@@ -28,6 +30,10 @@ console.log("======")
 startTime = Date.now()
 results5 = filter(lines, 'nde')
 console.log("Filtering #{lines.length} entries for 'nde' took #{Date.now() - startTime}ms for #{results5.length} results (~98% of results are positive, Fuzzy match, [Worst case scenario])")
+
+startTime = Date.now()
+results6 = filter(lines, 'indx')
+console.log("Filtering #{lines.length} entries for 'indx' took #{Date.now() - startTime}ms for #{results6.length} results (~10% of results are positive, Fuzzy match)")
 
 console.log("======")
 
