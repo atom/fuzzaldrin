@@ -246,7 +246,10 @@ exports.score = score = (subject, query) ->
 
       #Compare the score of making a match, a gap in Query (A), or a gap in Subject (B)
       v_diag = vRow[j]
-      v = vRow[j] = Math.max(align, vRow[j] + we, vRow[j - 1] + we)
+      gapA = vRow[j] + we
+      gapB = vRow[j - 1] + we
+      gap = if(gapA > gapB) then gapA else gapB
+      v = vRow[j] = if(align > gap) then align else gap
 
       #Record the best score so far
       if v > vmax
@@ -334,6 +337,7 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
 
   m = query.length
   n = subject.length
+  return [0,0,0] unless m and n
 
   count = 0
   pos = 0
@@ -342,7 +346,6 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
   i = -1
   j = -1
   k = n - 1
-
 
   while ++i < m
 
@@ -480,7 +483,8 @@ exports.align = (subject, query, offset = 0) ->
       v_diag = vRow[j]
       gapA = vRow[j] + we
       gapB = vRow[j - 1] + we
-      v = vRow[j] = Math.max(align, gapA, gapB)
+      gap = if(gapA > gapB) then gapA else gapB
+      v = vRow[j] = if(align > gap) then align else gap
 
       # what triggered the best score ?
       #In case of equality, taking gapB get us closer to the start of the string.

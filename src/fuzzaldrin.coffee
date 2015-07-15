@@ -1,4 +1,5 @@
 scorer = require './scorer'
+legacy_scorer = require './legacy'
 filter = require './filter'
 matcher = require './matcher'
 
@@ -8,7 +9,7 @@ module.exports =
   filter: (candidates, query, options) ->
     filter(candidates, query, options)
 
-  score: (string, query, {allowErrors}={}) ->
+  score: (string, query, {allowErrors, legacy}={}) ->
     return 0 unless string
     return 0 unless query
     return 0 unless allowErrors or scorer.isMatch(string,query)
@@ -17,8 +18,14 @@ module.exports =
     pos = query.indexOf(PathSeparator)
     baseQuery = if pos > -1 then query.substring(pos) else query
 
-    score = scorer.score(string, query)
-    score = scorer.basenameScore(string, baseQuery, score)
+    if not legacy
+      score = scorer.score(string, query)
+      score = scorer.basenameScore(string, baseQuery, score)
+    else
+      queryHasSlashes = pos > -1
+      score = legacy_scorer.score(string, coreQuery, queryHasSlashes)
+      unless queryHasSlashes
+        score = legacy_scorer.basenameScore(string, coreQuery, score)
 
     score
 
