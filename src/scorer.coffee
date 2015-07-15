@@ -186,8 +186,8 @@ exports.score = score = (subject, query) ->
     else
       #test for abbreviation
       abbr = abbrPrefix(query, query_lw, subject, subject_lw)
-      abbrBonus = abbr[0]
-      exact += 1.5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr[1]))
+      abbrBonus = abbr.bonus
+      exact += 1.5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr.pos))
 
     return exact * sz
 
@@ -195,13 +195,11 @@ exports.score = score = (subject, query) ->
   # Abbreviations sequence
 
   abbr = abbrPrefix(query, query_lw, subject, subject_lw)
-  abbrCount = abbr[2]
-  abbrBonus = abbr[0]
-
-  exact = 5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr[1]))
+  abbrBonus = abbr.bonus
+  exact = 5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr.pos))
 
   #Whole query is abbreviation ? then => bypass
-  if( abbrCount == query.length)
+  if( abbr.count == query.length)
     return exact * sz
 
   #----------------------------
@@ -333,11 +331,16 @@ countConsecutive = (query, query_lw, subject, subject_lw, i, j) ->
 # This handle "CamelCase" , "Title Case" "snake_case"
 #
 
+class AbbrInfo
+  constructor: (@bonus, @pos, @count) ->
+
+abbrInfo0 = new AbbrInfo(0,0.1,0)
+
 abbrPrefix = (query, query_lw, subject, subject_lw) ->
 
   m = query.length
   n = subject.length
-  return [0,0,0] unless m and n
+  return abbrInfo0 unless m and n
 
   count = 0
   pos = 0
@@ -386,9 +389,11 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
   #all of query is consumed.
   #a single char is not an acronym (also prevent division by 0)
   if(count < 2)
-    return [0,0,0]
+    return abbrInfo0
 
-  return [count + sameCase, pos/count, count]
+  return new AbbrInfo(count + sameCase, pos/count, count)
+
+
 
 
 #----------------------------------------------------------------------
@@ -406,7 +411,7 @@ exports.align = (subject, query, offset = 0) ->
   query_lw = query.toLowerCase()
 
   #this is like the consecutive bonus, but for scattered camelCase initials
-  nbc = abbrPrefix(query, query_lw, subject, subject_lw)[0]
+  nbc = abbrPrefix(query, query_lw, subject, subject_lw).bonus
 
   #Init
   vRow = new Array(n)
