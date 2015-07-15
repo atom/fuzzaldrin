@@ -1,18 +1,35 @@
 fs = require 'fs'
 path = require 'path'
 
-{filter, match} = require '../src/fuzzaldrin'
+{filter, match} = require '../lib/fuzzaldrin'
 
 lines = fs.readFileSync(path.join(__dirname, 'data.txt'), 'utf8').trim().split('\n')
 
 startTime = Date.now()
 results = filter(lines, 'index')
-console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results.length} results")
+console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results.length} results (~10% of results are positive)")
 
 startTime = Date.now()
 results2 = filter(lines, 'index', {legacy:true})
-console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results2.length} results (Legacy method)")
+console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results2.length} results (~10% of results are positive, Legacy method)")
 
+console.log("======")
+
+startTime = Date.now()
+results3 = filter(lines, 'node')
+console.log("Filtering #{lines.length} entries for 'node' took #{Date.now() - startTime}ms for #{results3.length} results (~98% of results are positive, mostly Exact match)")
+
+startTime = Date.now()
+results4 = filter(lines, 'node')
+console.log("Filtering #{lines.length} entries for 'node' took #{Date.now() - startTime}ms for #{results4.length} results (~98% of results are positive, Legacy method)")
+
+console.log("======")
+
+startTime = Date.now()
+results5 = filter(lines, 'nde')
+console.log("Filtering #{lines.length} entries for 'nde' took #{Date.now() - startTime}ms for #{results5.length} results (~98% of results are positive, Fuzzy match, [Worst case scenario])")
+
+console.log("======")
 
 startTime = Date.now()
 match(line, 'index') for line in lines
