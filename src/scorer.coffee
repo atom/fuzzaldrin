@@ -286,7 +286,7 @@ scoreMatchingChar = (subject, subject_lw, query, i, j, abbrBonus) ->
   bonus = if qj == si then wc else 0
 
   #start of string bonus
-  bonus += Math.floor(wst * tau / (tau + j))
+  bonus += Math.floor(wst * tau / (tau + i))
 
   #match IS a separator
   return ws + bonus if si of sep_map
