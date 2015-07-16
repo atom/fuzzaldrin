@@ -152,14 +152,14 @@ countDir = (path, end) ->
 #
 
 exports.score = score = (subject, query) ->
-  m = query.length + 1
-  n = subject.length + 1
+  m = query.length
+  n = subject.length
 
   #haystack size penalty
-  sz = 4 * tau / (4 * tau + n)
+  sz = 4 * tau / (4 * tau + n + 1)
 
   #max string size
-  n = fuzzyMaxlen + 1 if n > fuzzyMaxlen
+  n = fuzzyMaxlen if n > fuzzyMaxlen
 
   #precompute lowercase
   subject_lw = subject.toLowerCase()
@@ -183,8 +183,7 @@ exports.score = score = (subject, query) ->
     if (p == 0 or subject[p - 1] of sep_map)
       exact += 4 * base
 
-    # last position, the +1s cancel out
-    # for both the "length=<last index>+1" and the buffer=length+1
+    # last position, the "length=<last index>"
     lpos = n - m
 
     #sustring happens right before a separator (suffix)
@@ -193,7 +192,7 @@ exports.score = score = (subject, query) ->
 
     if(subject.indexOf(query) > -1)
       #substring is ExactCase
-      exact += 2 * base
+      exact += 3 * base
 
     else
       #test for abbreviation
@@ -229,25 +228,25 @@ exports.score = score = (subject, query) ->
     vRow[j] = 0
     seqRow[j] = 0
 
-  i = 0 #1..m-1
+  i = -1 #1..m-1
   while ++i < m     #foreach char of query
 
-    v_diag = vRow[0]
-    seq_diag = seqRow[0]
+    v_diag = 0
+    seq_diag = 0
 
-    j = 0 #1..n-1
+    j = -1 #1..n-1
     while ++j < n   #foreach char of subject
 
       #Compute a tentative match
-      if ( query_lw[i - 1] == subject_lw[j - 1] )
+      if ( query_lw[i] == subject_lw[j] )
 
         #forward search for a sequence of consecutive char (will apply some bonus for exact casing or complete match)
-        csc = if seq_diag == 0 then scoreMatchingSequence(query, query_lw, subject, subject_lw, i - 1, j - 1) else  seq_diag
+        seq = if seq_diag == 0 then scoreMatchingSequence(query, query_lw, subject, subject_lw, i, j) else  seq_diag
         seq_diag = seqRow[j]
-        seqRow[j] = csc
+        seqRow[j] = seq
 
         #determine bonus for matching A[i-1] with B[j-1]
-        align = v_diag + csc * scoreMatchingChar(query, subject, i - 1, j - 1, abbrBonus)
+        align = v_diag + seq * scoreMatchingChar(query, subject, i, j, abbrBonus)
 
       else
         seq_diag = seqRow[j]
@@ -256,8 +255,8 @@ exports.score = score = (subject, query) ->
 
       #Compare the score of making a match, a gap in Query (A), or a gap in Subject (B)
       v_diag = vRow[j]
-      gapA = vRow[j] + we
-      gapB = vRow[j - 1] + we
+      gapA = v_diag + we
+      gapB = if j == 0 then 0 else vRow[j - 1] + we
       gap = if(gapA > gapB) then gapA else gapB
       v = vRow[j] = if(align > gap) then align else gap
 
@@ -285,7 +284,7 @@ scoreMatchingChar = (query, subject, i, j, abbrBonus) ->
   #match IS a separator
   return ws + bonus if qi of sep_map
 
-  acn = wa * (1+abbrBonus)
+  acn = wa * (1 + abbrBonus)
 
   #match is FIRST char ( place a virtual token separator before first char of string)
   return acn + bonus if  j == 0
@@ -327,8 +326,8 @@ scoreMatchingSequence = (query, query_lw, subject, subject_lw, i, j) ->
 
   # most of the sequences are not exact matches
   if sz < m
-    return 3*sz if sz == sameCase #Give a bonus for no case error.
-    return sz + sameCase  #general case
+    return 3 * sz if sz == sameCase #Give a bonus for no case error.
+    return sz + sameCase #general case
 
   #exact case-sensitive match
   if sameCase == m
@@ -336,9 +335,6 @@ scoreMatchingSequence = (query, query_lw, subject, subject_lw, i, j) ->
 
   #exact case-insensitive match (assert sz == m)
   return 2 * (sz + sameCase )
-
-
-
 
 
 #
@@ -356,7 +352,7 @@ scoreMatchingSequence = (query, query_lw, subject, subject_lw, i, j) ->
 class AbbrInfo
   constructor: (@bonus, @pos, @count) ->
 
-abbrInfo0 = new AbbrInfo(0,0.1,0)
+abbrInfo0 = new AbbrInfo(0, 0.1, 0)
 
 abbrPrefix = (query, query_lw, subject, subject_lw) ->
 
@@ -395,9 +391,9 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
         # Is it snake_case ?
         # 1) j is first char or subject[j-1] is separator
 
-        prev_s = if j==0 then '' else subject[j-1]
+        prev_s = if j == 0 then '' else subject[j - 1]
 
-        if  j==0  or ( prev_s of sep_map ) or  (sj != sj_lw and prev_s == subject_lw[j-1] )
+        if  j == 0 or ( prev_s of sep_map ) or (sj != sj_lw and prev_s == subject_lw[j - 1] )
 
           #record position and increase count
           pos += j
@@ -409,16 +405,14 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
           break
 
     #all of subject is consumed.
-    if j==k then break
+    if j == k then break
 
   #all of query is consumed.
   #a single char is not an acronym (also prevent division by 0)
   if(count < 2)
     return abbrInfo0
 
-  return new AbbrInfo(count + sameCase, pos/count, count)
-
-
+  return new AbbrInfo(count + sameCase, pos / count, count)
 
 
 #----------------------------------------------------------------------
@@ -429,17 +423,18 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
 #
 
 exports.align = (subject, query, offset = 0) ->
-  m = query.length + 1
-  n = subject.length + 1
+  m = query.length
+  n = subject.length
 
   #max string size
-  n = fuzzyMaxlen + 1 if n > fuzzyMaxlen
+  n = fuzzyMaxlen if n > fuzzyMaxlen
 
+  #precompute lowercase
   subject_lw = subject.toLowerCase()
   query_lw = query.toLowerCase()
 
   #this is like the consecutive bonus, but for scattered camelCase initials
-  nbc = abbrPrefix(query, query_lw, subject, subject_lw).bonus
+  abbrBonus = abbrPrefix(query, query_lw, subject, subject_lw).bonus
 
   #Init
   vRow = new Array(n)
@@ -456,26 +451,24 @@ exports.align = (subject, query, offset = 0) ->
 
   #Traceback matrix
   trace = new Array(m * n)
-  pos = n - 1
+  pos = -1
 
   #Fill with 0
   j = -1
   while ++j < n
     vRow[j] = 0
     seqRow[j] = 0
-    trace[j] = STOP
 
-  i = 0 #1..m-1
+  i = -1 #1..m-1
   while ++i < m #foreach char of query
 
-    gapB = 0
-    v_diag = vRow[0]
-    seq_diag = seqRow[0]
-    pos++
-    trace[pos] = STOP
+    v_diag = 0
+    seq_diag = 0
 
-    j = 0 #1..n-1
+    j = -1 #1..n-1
     while ++j < n #foreach char of subject
+
+      pos++ #pos = i * n + j
 
       # Score the options
       # When comparing string A,B character per character
@@ -490,22 +483,23 @@ exports.align = (subject, query, offset = 0) ->
       # we use similarity(A,B) as an entry point to give various bonuses.
 
       #Compute a tentative match
-      if ( query_lw[i - 1] == subject_lw[j - 1] )
+      if ( query_lw[i] == subject_lw[j] )
 
         if seq_diag == 0
 
           #forward search for a sequence of consecutive char (will apply some bonus for exact casing or exact match)
-          csc = scoreMatchingSequence(query, query_lw, subject, subject_lw, i - 1, j - 1)
+          seq = scoreMatchingSequence(query, query_lw, subject, subject_lw, i, j)
 
         else
           # Verify that previous char is a Match before applying sequence bonus.
           # (this is not done for score because we don't keep trace)
-          csc = if trace[pos - n] == DIAGONAL then seq_diag else 1
+          seq = if pos > n and trace[pos - n - 1] == DIAGONAL then seq_diag else 1
+
 
         seq_diag = seqRow[j]
-        seqRow[j] = csc
+        seqRow[j] = seq
 
-        align = v_diag + csc * scoreMatchingChar(query, subject, i - 1, j - 1, nbc)
+        align = v_diag + seq * scoreMatchingChar(query, subject, i, j, abbrBonus)
 
       else
         seq_diag = seqRow[j]
@@ -514,15 +508,14 @@ exports.align = (subject, query, offset = 0) ->
 
       #Compare the score of making a match, a gap in Query (A), or a gap in Subject (B)
       v_diag = vRow[j]
-      gapA = vRow[j] + we
-      gapB = vRow[j - 1] + we
+      gapA = v_diag + we
+      gapB = if j == 0 then 0 else vRow[j - 1] + we
       gap = if(gapA > gapB) then gapA else gapB
       v = vRow[j] = if(align > gap) then align else gap
 
       # what triggered the best score ?
       #In case of equality, taking gapB get us closer to the start of the string.
 
-      pos++ #pos = i * n + j
       switch v
         when 0
           trace[pos] = STOP
@@ -548,7 +541,6 @@ exports.align = (subject, query, offset = 0) ->
   pos = i * n + j
   backtrack = true
   matches = []
-  offset--
 
   while backtrack
     switch trace[pos]
