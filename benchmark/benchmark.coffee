@@ -19,35 +19,37 @@ startTime = Date.now()
 results2 = filter(lines, 'index', {legacy:true})
 console.log("Filtering #{lines.length} entries for 'index' took #{Date.now() - startTime}ms for #{results2.length} results (~10% of results are positive, Legacy method)")
 
+startTime = Date.now()
+results6 = filter(lines, 'indx')
+console.log("Filtering #{lines.length} entries for 'indx' took #{Date.now() - startTime}ms for #{results6.length} results (~10% of results are positive, Fuzzy match)")
+
 console.log("======")
+
+startTime = Date.now()
+results4 = filter(lines, 'node')
+console.log("Filtering #{lines.length} entries for 'node' took #{Date.now() - startTime}ms for #{results4.length} results (~98% of results are positive, Legacy method)")
 
 startTime = Date.now()
 results3 = filter(lines, 'node')
 console.log("Filtering #{lines.length} entries for 'node' took #{Date.now() - startTime}ms for #{results3.length} results (~98% of results are positive, mostly Exact match)")
 
 startTime = Date.now()
-results4 = filter(lines, 'node')
-console.log("Filtering #{lines.length} entries for 'node' took #{Date.now() - startTime}ms for #{results4.length} results (~98% of results are positive, Legacy method)")
-
-console.log("======")
-
-startTime = Date.now()
-results6 = filter(lines, 'indx')
-console.log("Filtering #{lines.length} entries for 'indx' took #{Date.now() - startTime}ms for #{results6.length} results (~10% of results are positive, Fuzzy match)")
-
-startTime = Date.now()
 results7 = filter(lines, 'nm')
-console.log("Filtering #{lines.length} entries for 'nm' took #{Date.now() - startTime}ms for #{results7.length} results (~98% of results are positive, Acronym)")
+console.log("Filtering #{lines.length} entries for 'nm' took #{Date.now() - startTime}ms for #{results7.length} results (~98% of results are positive, Acronym match)")
 
 console.log("======")
 
 startTime = Date.now()
-results5 = filter(lines, 'nde')
-console.log("Filtering #{lines.length} entries for 'nde' took #{Date.now() - startTime}ms for #{results5.length} results (~98% of results are positive, Fuzzy match, [Worst case scenario])")
+results5 = filter(lines, 'nodemodules')
+console.log("Filtering #{lines.length} entries for 'nodemodules' took #{Date.now() - startTime}ms for #{results5.length} results (~98% positive + Fuzzy match, [Worst case scenario])")
 
 startTime = Date.now()
-results8 = filter(lines, 'nde', {maxInners:10000})
-console.log("Filtering #{lines.length} entries for 'nde' took #{Date.now() - startTime}ms for #{results8.length} results (Worst case mitigation strategy)")
+results8 = filter(lines, 'nodemodules', {maxInners:10000})
+console.log("Filtering #{lines.length} entries for 'nodemodules' took #{Date.now() - startTime}ms for #{results8.length} results (Worst case mitigation strategy)")
+
+startTime = Date.now()
+results9 = filter(lines, 'nodemodules', {legacy:true})
+console.log("Filtering #{lines.length} entries for 'nodemodules' took #{Date.now() - startTime}ms for #{results9.length} results (Legacy)")
 
 console.log("======")
 
