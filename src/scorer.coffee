@@ -71,29 +71,33 @@ fuzzyMaxlen = 64
 #
 
 exports.isMatch = isMatch = (subject, query) ->
-  m = query.length
-  n = subject.length
+  m = subject.length
+  n = query.length
 
-  if !m or !n or m > n
+  if !m or !n or n > m
     return false
 
-  lq = query.toLowerCase()
-  ls = subject.toLowerCase()
+  query_lw = query.toLowerCase()
+  subject_lw = subject.toLowerCase()
 
   i = -1
   j = -1
-  k = n - 1
+  k = m - 1
 
-  while ++i < m
+  #foreach char of query
+  while ++j < n
 
-    qi = lq[i]
+    qj_lw = query_lw[j]
 
-    while ++j < n
+    #continue search in subject from last match
+    while ++i < m
 
-      if ls[j] == qi
+      #found match, goto next char of query
+      if subject_lw[i] == qj_lw
         break
 
-      else if j == k
+      #last char of query AND no match
+      else if i == k
         return false
 
 
@@ -152,13 +156,14 @@ countDir = (path, end) ->
 #
 
 exports.score = score = (subject, query) ->
-  m = query.length
-  n = subject.length
+  m = subject.length
+  n = query.length
 
   #haystack size penalty
-  sz = 4 * tau / (4 * tau + n + 1)
+  sz = 4 * tau / (4 * tau + m)
 
-  #max string size
+  #max string size for O(m*n) best match search
+  m = fuzzyMaxlen if m > fuzzyMaxlen
   n = fuzzyMaxlen if n > fuzzyMaxlen
 
   #precompute lowercase
@@ -174,7 +179,7 @@ exports.score = score = (subject, query) ->
 
     #bonus per consecutive char grow with number of consecutive
     #so this need to be squared to stay on top.
-    base = wex * m * m
+    base = wex * n * n
 
     #base bonus + position decay
     exact = base * (1.0 + tau / (tau + p))
@@ -183,8 +188,8 @@ exports.score = score = (subject, query) ->
     if (p == 0 or subject[p - 1] of sep_map)
       exact += 4 * base
 
-    # last position, the "length=<last index>"
-    lpos = n - m
+    # position of query in subject when last char aligned
+    lpos = m - n
 
     #sustring happens right before a separator (suffix)
     if (p == lpos or subject[p + 1] of sep_map)
@@ -196,7 +201,7 @@ exports.score = score = (subject, query) ->
 
     else
       #test for abbreviation
-      abbr = abbrPrefix(query, query_lw, subject, subject_lw)
+      abbr = abbrPrefix(subject, subject_lw, query, query_lw)
       abbrBonus = abbr.bonus
       exact += 1.5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr.pos))
 
@@ -205,7 +210,7 @@ exports.score = score = (subject, query) ->
   #----------------------------
   # Abbreviations sequence
 
-  abbr = abbrPrefix(query, query_lw, subject, subject_lw)
+  abbr = abbrPrefix(subject, subject_lw, query, query_lw)
   abbrBonus = abbr.bonus
   exact = 5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr.pos))
 
@@ -229,24 +234,25 @@ exports.score = score = (subject, query) ->
     seqRow[j] = 0
 
   i = -1 #1..m-1
-  while ++i < m     #foreach char of query
+  while ++i < m     #foreach char of subject
 
     v_diag = 0
     seq_diag = 0
+    si_lw = subject_lw[i]
 
     j = -1 #1..n-1
-    while ++j < n   #foreach char of subject
+    while ++j < n   #foreach char of query
 
       #Compute a tentative match
-      if ( query_lw[i] == subject_lw[j] )
+      if ( query_lw[j] == si_lw )
 
         #forward search for a sequence of consecutive char (will apply some bonus for exact casing or complete match)
-        seq = if seq_diag == 0 then scoreMatchingSequence(query, query_lw, subject, subject_lw, i, j) else  seq_diag
+        seq = if seq_diag == 0 then scoreMatchingSequence(subject, subject_lw, query, query_lw, i, j) else  seq_diag
         seq_diag = seqRow[j]
         seqRow[j] = seq
 
-        #determine bonus for matching A[i-1] with B[j-1]
-        align = v_diag + seq * scoreMatchingChar(query, subject, i, j, abbrBonus)
+        #determine bonus for matching A[i] with B[j]
+        align = v_diag + seq * scoreMatchingChar(subject, subject_lw, query, i, j, abbrBonus)
 
       else
         seq_diag = seqRow[j]
@@ -271,32 +277,33 @@ exports.score = score = (subject, query) ->
 # Compute the bonuses for two chars that are confirmed to matches in a case-insensitive way
 #
 
-scoreMatchingChar = (query, subject, i, j, abbrBonus) ->
-  qi = query[i]
-  sj = subject[j]
+scoreMatchingChar = (subject, subject_lw, query, i, j, abbrBonus) ->
+
+  si = subject[i]
+  qj = query[j]
 
   #Proper casing bonus
-  bonus = if qi == sj then wc else 0
+  bonus = if qj == si then wc else 0
 
   #start of string bonus
   bonus += Math.floor(wst * tau / (tau + j))
 
   #match IS a separator
-  return ws + bonus if qi of sep_map
+  return ws + bonus if si of sep_map
 
   acn = wa * (1 + abbrBonus)
 
   #match is FIRST char ( place a virtual token separator before first char of string)
-  return acn + bonus if  j == 0
+  return acn + bonus if  i == 0
 
   #get previous char
-  prev_s = subject[j - 1]
+  prev_s = subject[i - 1]
 
   #match FOLLOW a separator
   return acn + bonus if ( prev_s of sep_map)
 
   #match is Capital in camelCase (preceded by lowercase)
-  return acn + bonus if (sj == sj.toUpperCase() and prev_s == prev_s.toLowerCase())
+  return acn + bonus if (si != subject_lw[i] and prev_s == subject_lw[i-1])
 
   #normal Match, add proper case bonus
   return wm + bonus
@@ -308,9 +315,9 @@ scoreMatchingChar = (query, subject, i, j, abbrBonus) ->
 # use the fact query_lw[i] == subject_lw[j]
 # has been checked before entering.
 
-scoreMatchingSequence = (query, query_lw, subject, subject_lw, i, j) ->
-  m = query.length
-  n = subject.length
+scoreMatchingSequence = (subject, subject_lw, query, query_lw, i, j) ->
+  m = subject.length
+  n = query.length
 
   mi = m - i
   nj = n - j
@@ -319,21 +326,21 @@ scoreMatchingSequence = (query, query_lw, subject, subject_lw, i, j) ->
   sameCase = 0
   sz = 0 #sz will be one more than the last qi==sj
 
-  sameCase++ if (query[i] == subject[j])
-  while (++sz < k and query_lw[++i] == subject_lw[++j])
-    sameCase++ if (query[i] == subject[j])
+  sameCase++ if (query[j] == subject[i])
+  while (++sz < k and query_lw[++j] == subject_lw[++i])
+    sameCase++ if (query[j] == subject[i])
 
 
   # most of the sequences are not exact matches
-  if sz < m
+  if sz < n
     return 3 * sz if sz == sameCase #Give a bonus for no case error.
     return sz + sameCase #general case
 
   #exact case-sensitive match
-  if sameCase == m
-    return 8 * (m)
+  if sameCase == n
+    return 8 * n
 
-  #exact case-insensitive match (assert sz == m)
+  #exact case-insensitive match (assert sz == n)
   return 2 * (sz + sameCase )
 
 
@@ -354,14 +361,14 @@ class AbbrInfo
 
 abbrInfo0 = new AbbrInfo(0, 0.1, 0)
 
-abbrPrefix = (query, query_lw, subject, subject_lw) ->
+abbrPrefix = (subject, subject_lw, query, query_lw) ->
 
-  m = query.length
-  n = subject.length
+  m = subject.length
+  n = query.length
   return abbrInfo0 unless m and n
 
   #Abbreviation is a fuzzy match
-  n = fuzzyMaxlen if n > fuzzyMaxlen
+  m = fuzzyMaxlen if m > fuzzyMaxlen
 
   count = 0
   pos = 0
@@ -369,43 +376,43 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
 
   i = -1
   j = -1
-  k = n - 1
+  k = m - 1
 
-  while ++i < m
+  #foreach char of query
+  while ++j < n
 
-    qi_lw = query_lw[i]
+    qj_lw = query_lw[j]
 
-    while ++j < n
+    while ++i < m
 
-      sj_lw = subject_lw[j]
+      si_lw = subject_lw[i]
 
-      #we have a match
-      if(qi_lw == sj_lw)
-
-        sj = subject[j]
+      #test if subject match
+      if(qj_lw == si_lw)
 
         # Is it CamelCase ?
-        # 1) sj is Uppercase ( different from sj.toLowerCase() ) AND
+        # 1) si is Uppercase ( different from si.toLowerCase() ) AND
         # 2) j is first char or lowercase
         #
         # Is it snake_case ?
         # 1) j is first char or subject[j-1] is separator
 
-        prev_s = if j == 0 then '' else subject[j - 1]
+        si = subject[i]
+        prev_s = if i == 0 then si else subject[i - 1]
 
-        if  j == 0 or ( prev_s of sep_map ) or (sj != sj_lw and prev_s == subject_lw[j - 1] )
+        if  i == 0 or ( prev_s of sep_map ) or (si != si_lw and prev_s == subject_lw[i - 1] )
 
           #record position and increase count
-          pos += j
+          pos += i
           count++
 
           #Is it sameCase ?
-          sameCase++ if ( query[i] == sj )
+          sameCase++ if ( query[j] == si )
 
           break
 
     #all of subject is consumed.
-    if j == k then break
+    if i == k then break
 
   #all of query is consumed.
   #a single char is not an acronym (also prevent division by 0)
@@ -423,10 +430,11 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
 #
 
 exports.align = (subject, query, offset = 0) ->
-  m = query.length
-  n = subject.length
+  m = subject.length
+  n = query.length
 
-  #max string size
+  #max string size for O(m*n) best match search
+  m = fuzzyMaxlen if m > fuzzyMaxlen
   n = fuzzyMaxlen if n > fuzzyMaxlen
 
   #precompute lowercase
@@ -434,7 +442,7 @@ exports.align = (subject, query, offset = 0) ->
   query_lw = query.toLowerCase()
 
   #this is like the consecutive bonus, but for scattered camelCase initials
-  abbrBonus = abbrPrefix(query, query_lw, subject, subject_lw).bonus
+  abbrBonus = abbrPrefix(subject, subject_lw, query, query_lw).bonus
 
   #Init
   vRow = new Array(n)
@@ -460,46 +468,34 @@ exports.align = (subject, query, offset = 0) ->
     seqRow[j] = 0
 
   i = -1 #1..m-1
-  while ++i < m #foreach char of query
+  while ++i < m #foreach char of subject
 
     v_diag = 0
     seq_diag = 0
+    si_lw = subject_lw[i]
 
     j = -1 #1..n-1
-    while ++j < n #foreach char of subject
-
-      pos++ #pos = i * n + j
-
-      # Score the options
-      # When comparing string A,B character per character
-      # we have 3 possible choices.
-      #
-      # 1) Remove character A[i] from the total match
-      # 2) Remove characer B[j] fromt the total match
-      # 3) Attempt to match A[i] with B[j]
-      #
-      # For the point 3, if char are different in a case insensitive way, score is 0
-      # if they are similar, take previous diagonal score (v_diag) and add similarity score.
-      # we use similarity(A,B) as an entry point to give various bonuses.
+    while ++j < n #foreach char of query
 
       #Compute a tentative match
-      if ( query_lw[i] == subject_lw[j] )
+      if ( query_lw[j] == si_lw )
 
         if seq_diag == 0
-
-          #forward search for a sequence of consecutive char (will apply some bonus for exact casing or exact match)
-          seq = scoreMatchingSequence(query, query_lw, subject, subject_lw, i, j)
+          # forward search for a sequence of consecutive char
+          # (will apply some bonus for exact casing or matching the whole query)
+          seq = scoreMatchingSequence(subject, subject_lw, query, query_lw, i, j)
 
         else
           # Verify that previous char is a Match before applying sequence bonus.
           # (this is not done for score because we don't keep trace)
-          seq = if pos > n and trace[pos - n - 1] == DIAGONAL then seq_diag else 1
+          seq = if pos >= n and trace[pos - n] == DIAGONAL then seq_diag else 1
 
 
         seq_diag = seqRow[j]
         seqRow[j] = seq
 
-        align = v_diag + seq * scoreMatchingChar(query, subject, i, j, abbrBonus)
+        #determine bonus for matching A[i] with B[j]
+        align = v_diag + seq * scoreMatchingChar(subject, subject_lw, query, i, j, abbrBonus)
 
       else
         seq_diag = seqRow[j]
@@ -514,15 +510,15 @@ exports.align = (subject, query, offset = 0) ->
       v = vRow[j] = if(align > gap) then align else gap
 
       # what triggered the best score ?
-      #In case of equality, taking gapB get us closer to the start of the string.
-
+      #In case of equality, taking gapA get us closer to the start of the string.
+      pos++ #pos = i * n + j
       switch v
         when 0
           trace[pos] = STOP
-        when gapB
-          trace[pos] = LEFT
         when gapA
           trace[pos] = UP
+        when gapB
+          trace[pos] = LEFT
         when align
           trace[pos] = DIAGONAL
           #Record best score
@@ -542,7 +538,7 @@ exports.align = (subject, query, offset = 0) ->
   backtrack = true
   matches = []
 
-  while backtrack
+  while backtrack and i >= 0 and j >= 0
     switch trace[pos]
       when UP
         i--
@@ -551,7 +547,7 @@ exports.align = (subject, query, offset = 0) ->
         j--
         pos--
       when DIAGONAL
-        matches.push j + offset
+        matches.push i + offset
         j--
         i--
         pos -= n + 1
