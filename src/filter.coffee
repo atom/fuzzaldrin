@@ -12,7 +12,7 @@ module.exports = (candidates, query, {key, maxResults, maxInners, allowErrors, l
 
     # when query is to generic to select a few case, do reasonable effort to process results
     # then return to user to let him precise the query. (consider that many positive candidate
-    # one the working list before going to sort and output maxResults best ones )
+    # on the working list before going to sort and output maxResults best ones )
     spotLeft = if maxInners>0 then maxInners else candidates.length
 
     # allow any character of query to be optional (but better score if they are present)

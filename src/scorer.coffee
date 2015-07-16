@@ -54,6 +54,18 @@ exports.coreChars = coreChars = (query) ->
   return query.replace(opt_char_re, '')
 
 #
+# Search window
+# string_match compute the score using first occurrence of character.
+# we'll consider all occurrences, but limit this search of the best occurrence to
+# a window at the start of the string. This mostly concern deeply nested path
+# and they receive a special treatment for baseName.
+#
+# Exact match will still continue to search full string.
+#
+
+fuzzyMaxlen = 64
+
+#
 # isMatch:
 # Are all characters of query in subject, in proper order
 #
@@ -143,11 +155,16 @@ exports.score = score = (subject, query) ->
   m = query.length + 1
   n = subject.length + 1
 
+  #haystack size penalty
+  sz = 4 * tau / (4 * tau + n)
+
+  #max string size
+  n = fuzzyMaxlen + 1 if n > fuzzyMaxlen
+
+  #precompute lowercase
   subject_lw = subject.toLowerCase()
   query_lw = query.toLowerCase()
 
-  #haystack size penalty
-  sz = 4 * tau / (4 * tau + n)
 
   #----------------------------
   # Exact Match
@@ -337,6 +354,9 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
   n = subject.length
   return abbrInfo0 unless m and n
 
+  #Abbreviation is a fuzzy match
+  n = fuzzyMaxlen if n > fuzzyMaxlen
+
   count = 0
   pos = 0
   sameCase = 0
@@ -401,6 +421,9 @@ abbrPrefix = (query, query_lw, subject, subject_lw) ->
 exports.align = (subject, query, offset = 0) ->
   m = query.length + 1
   n = subject.length + 1
+
+  #max string size
+  n = fuzzyMaxlen + 1 if n > fuzzyMaxlen
 
   subject_lw = subject.toLowerCase()
   query_lw = query.toLowerCase()

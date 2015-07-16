@@ -42,7 +42,7 @@ results5 = filter(lines, 'nde')
 console.log("Filtering #{lines.length} entries for 'nde' took #{Date.now() - startTime}ms for #{results5.length} results (~98% of results are positive, Fuzzy match, [Worst case scenario])")
 
 startTime = Date.now()
-results8 = filter(lines, 'nde', {maxInners:5000})
+results8 = filter(lines, 'nde', {maxInners:10000})
 console.log("Filtering #{lines.length} entries for 'nde' took #{Date.now() - startTime}ms for #{results8.length} results (Worst case mitigation strategy)")
 
 console.log("======")
