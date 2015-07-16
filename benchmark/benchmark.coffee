@@ -5,6 +5,10 @@ path = require 'path'
 
 lines = fs.readFileSync(path.join(__dirname, 'data.txt'), 'utf8').trim().split('\n')
 
+#warmup + compile
+filter(lines, 'index')
+filter(lines, 'index', {legacy:true})
+
 console.log("======")
 
 startTime = Date.now()

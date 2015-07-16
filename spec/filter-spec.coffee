@@ -281,7 +281,7 @@ describe "filtering", ->
         'Settings View: Uninstall Packages',
         'Settings View: View Installed Themes',
         'Application: Install Update',
-        'install'
+        'Install'
       ]
       result = filter(candidates, 'install')
       expect(result[0]).toBe candidates[4]

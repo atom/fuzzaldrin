@@ -242,7 +242,7 @@ exports.score = score = (subject, query) ->
       if ( query_lw[i - 1] == subject_lw[j - 1] )
 
         #forward search for a sequence of consecutive char (will apply some bonus for exact casing or complete match)
-        csc = if seq_diag == 0 then countConsecutive(query, query_lw, subject, subject_lw, i - 1, j - 1) else  seq_diag
+        csc = if seq_diag == 0 then scoreMatchingSequence(query, query_lw, subject, subject_lw, i - 1, j - 1) else  seq_diag
         seq_diag = seqRow[j]
         seqRow[j] = csc
 
@@ -303,32 +303,42 @@ scoreMatchingChar = (query, subject, i, j, abbrBonus) ->
   return wm + bonus
 
 #
-# Count consecutive
+# score the quality of a match Neighbourhood
+# mostly using consecutive characters count and proper case.
 #
+# use the fact query_lw[i] == subject_lw[j]
+# has been checked before entering.
 
-countConsecutive = (query, query_lw, subject, subject_lw, i, j) ->
+scoreMatchingSequence = (query, query_lw, subject, subject_lw, i, j) ->
   m = query.length
   n = subject.length
 
   mi = m - i
   nj = n - j
-
   k = if mi < nj then mi else nj
+
   sameCase = 0
+  sz = 0 #sz will be one more than the last qi==sj
 
-  sz = -1
-  while (++sz < k and query_lw[i] == subject_lw[j])
+  sameCase++ if (query[i] == subject[j])
+  while (++sz < k and query_lw[++i] == subject_lw[++j])
     sameCase++ if (query[i] == subject[j])
-    i++
-    j++
 
-  # exact match bonus (like score IndexOf)
+
+  # most of the sequences are not exact matches
+  if sz < m
+    return 3*sz if sz == sameCase #Give a bonus for no case error.
+    return sz + sameCase  #general case
+
+  #exact case-sensitive match
   if sameCase == m
     return 8 * (m)
-  if sz == m
-    return 2 * (sz + sameCase )
-  else
-    return sz + sameCase
+
+  #exact case-insensitive match (assert sz == m)
+  return 2 * (sz + sameCase )
+
+
+
 
 
 #
@@ -485,7 +495,7 @@ exports.align = (subject, query, offset = 0) ->
         if seq_diag == 0
 
           #forward search for a sequence of consecutive char (will apply some bonus for exact casing or exact match)
-          csc = countConsecutive(query, query_lw, subject, subject_lw, i - 1, j - 1)
+          csc = scoreMatchingSequence(query, query_lw, subject, subject_lw, i - 1, j - 1)
 
         else
           # Verify that previous char is a Match before applying sequence bonus.
