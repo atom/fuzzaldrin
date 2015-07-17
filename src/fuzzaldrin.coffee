@@ -12,7 +12,9 @@ module.exports =
   score: (string, query, {allowErrors, legacy}={}) ->
     return 0 unless string
     return 0 unless query
-    return 0 unless allowErrors or scorer.isMatch(string,query)
+
+    coreQuery = scorer.coreChars(query)
+    return 0 unless allowErrors or scorer.isMatch(string,coreQuery)
 
     #get "file.ext" from "folder/file.ext"
     pos = query.indexOf(PathSeparator)
@@ -33,7 +35,9 @@ module.exports =
     return [] unless string
     return [] unless query
     return [0...string.length] if string is query
-    return [] unless allowErrors or scorer.isMatch(string,query)
+
+    coreQuery = scorer.coreChars(query)
+    return [] unless allowErrors or scorer.isMatch(string,coreQuery)
 
     #get "file.ext" from "folder/file.ext"
     pos = query.indexOf(PathSeparator)
