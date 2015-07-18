@@ -88,7 +88,7 @@ describe "filtering", ->
       expect(bestMatch(candidate, "file")).toBe candidate[1]
       expect(bestMatch(candidate, "fle")).toBe candidate[1]
 
-    it "allow to folder path", ->
+    it "allow to match in folder path", ->
       candidate = [
         path.join('base', 'file'),
         path.join('bar', 'file')
@@ -96,6 +96,26 @@ describe "filtering", ->
 
       expect(bestMatch(candidate, "base file")).toBe candidate[0]
       expect(bestMatch(candidate, "as fle")).toBe candidate[0]
+
+    it "prefer full path almost exact match, to match in file only", ->
+
+      candidate = [
+        path.join('models', 'user.b'),
+        path.join('migrate', 'moderator_column_users.rb')
+      ]
+
+      expect(bestMatch(candidate, "modeluser")).toBe candidate[0]
+      expect(bestMatch(candidate, "migrateuser")).toBe candidate[1]
+
+      candidate = [
+        path.join('models', 'user.b'),
+        path.join('migrate', 'model_users.rb')
+      ]
+
+      expect(bestMatch(candidate, "modeluser")).toBe candidate[1]
+
+
+
 
   describe "when the query contains slashes", ->
     it "weighs basename matches higher", ->
