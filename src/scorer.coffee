@@ -195,8 +195,10 @@ exports.score = score = (subject, query) ->
     if (p == lpos or subject[p + 1] of sep_map)
       exact += base
 
-    if(subject.indexOf(query) > -1)
+    if(subject.indexOf(query, p) > -1)
       #substring is ExactCase
+      #search start at pos, because case-sensitive occurrence
+      #cannot happens before case-insensitive one.
       exact += 3 * base
 
     else
