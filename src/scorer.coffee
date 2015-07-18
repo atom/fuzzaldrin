@@ -236,6 +236,7 @@ exports.score = score = (subject, query) ->
   i = -1 #1..m-1
   while ++i < m     #foreach char of subject
 
+    v = 0
     v_diag = 0
     seq_diag = 0
     si_lw = subject_lw[i]
@@ -261,9 +262,7 @@ exports.score = score = (subject, query) ->
 
       #Compare the score of making a match, a gap in Query (A), or a gap in Subject (B)
       v_diag = vRow[j]
-      gapA = v_diag + we
-      gapB = if j == 0 then 0 else vRow[j - 1] + we
-      gap = if(gapA > gapB) then gapA else gapB
+      gap = we + if(v > v_diag) then v else v_diag
       v = vRow[j] = if(align > gap) then align else gap
 
       #Record the best score so far
@@ -470,6 +469,7 @@ exports.align = (subject, query, offset = 0) ->
   i = -1 #1..m-1
   while ++i < m #foreach char of subject
 
+    v = 0
     v_diag = 0
     seq_diag = 0
     si_lw = subject_lw[i]
@@ -505,7 +505,7 @@ exports.align = (subject, query, offset = 0) ->
       #Compare the score of making a match, a gap in Query (A), or a gap in Subject (B)
       v_diag = vRow[j]
       gapA = v_diag + we
-      gapB = if j == 0 then 0 else vRow[j - 1] + we
+      gapB = v + we
       gap = if(gapA > gapB) then gapA else gapB
       v = vRow[j] = if(align > gap) then align else gap
 
