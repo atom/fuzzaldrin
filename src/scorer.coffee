@@ -70,15 +70,12 @@ fuzzyMaxlen = 64
 # Are all characters of query in subject, in proper order
 #
 
-exports.isMatch = isMatch = (subject, query) ->
-  m = subject.length
-  n = query.length
+exports.isMatch = isMatch = (subject_lw, query_lw) ->
+  m = subject_lw.length
+  n = query_lw.length
 
   if !m or !n or n > m
     return false
-
-  query_lw = query.toLowerCase()
-  subject_lw = subject.toLowerCase()
 
   i = -1
   j = -1
@@ -109,25 +106,25 @@ exports.isMatch = isMatch = (subject, query) ->
 # Score adjustment for path
 #
 
-exports.basenameScore = (string, query, fullPathScore) ->
+exports.basenameScore = (subject, query, fullPathScore, subject_lw = subject.toLowerCase(), query_lw = query.toLowerCase()) ->
   return 0 if fullPathScore == 0
 
   # Skip trailing slashes
-  end = string.length - 1
-  end-- while string[end] is PathSeparator
+  end = subject.length - 1
+  end-- while subject[end] is PathSeparator
 
-  # Get position of basePath of string. If no PathSeparator, no base path exist.
-  basePos = string.lastIndexOf(PathSeparator, end)
+  # Get position of basePath of subject. If no PathSeparator, no base path exist.
+  basePos = subject.lastIndexOf(PathSeparator, end)
   return fullPathScore if (basePos == -1)
 
   # Get basePath score
-  basePathScore = score(string.substring(basePos + 1, end + 1), query)
+  basePathScore = score(subject[basePos + 1 ... end + 1], query, subject_lw[basePos + 1 ... end + 1], query_lw)
 
   # We'll merge some of that base path score with full path score.
   # Mix start favoring base Path then favor full path as directory depth increase
   # Note that base Path test are more nested than original, so we have to compensate one level of nesting.
 
-  alpha = 0.5 * 2 * tau / ( 2 * tau + countDir(string, end + 1) )
+  alpha = 0.5 * 2 * tau / ( 2 * tau + countDir(subject, end + 1) )
   return  alpha * basePathScore + (1 - alpha) * fullPathScore
 
 #
@@ -155,74 +152,66 @@ countDir = (path, end) ->
 # Main scoring algorithm
 #
 
-exports.score = score = (subject, query) ->
+exports.score = score = (subject, query, subject_lw = subject.toLowerCase(), query_lw = query.toLowerCase()) ->
   m = subject.length
   n = query.length
 
   #haystack size penalty
   sz = 4 * tau / (4 * tau + m)
 
-  #max string size for O(m*n) best match search
-  m = fuzzyMaxlen if m > fuzzyMaxlen
-  n = fuzzyMaxlen if n > fuzzyMaxlen
-
-  #precompute lowercase
-  subject_lw = subject.toLowerCase()
-  query_lw = query.toLowerCase()
-
-
-  #----------------------------
-  # Exact Match
-  # => bypass
-
-  if ( p = subject_lw.indexOf(query_lw)) > -1
-
-    #bonus per consecutive char grow with number of consecutive
-    #so this need to be squared to stay on top.
-    base = wex * n * n
-
-    #base bonus + position decay
-    exact = base * (1.0 + tau / (tau + p))
-
-    #sustring happens right after a separator (prefix)
-    if (p == 0 or subject[p - 1] of sep_map)
-      exact += 4 * base
-
-    # position of query in subject when last char aligned
-    lpos = m - n
-
-    #sustring happens right before a separator (suffix)
-    if (p == lpos or subject[p + 1] of sep_map)
-      exact += base
-
-    if(subject.indexOf(query, p) > -1)
-      #substring is ExactCase
-      #search start at pos, because case-sensitive occurrence
-      #cannot happens before case-insensitive one.
-      exact += 3 * base
-
-    else
-      #test for abbreviation
-      abbr = abbrPrefix(subject, subject_lw, query, query_lw)
-      abbrBonus = abbr.bonus
-      exact += 1.5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr.pos))
-
-    return exact * sz
-
   #----------------------------
   # Abbreviations sequence
 
   abbr = abbrPrefix(subject, subject_lw, query, query_lw)
   abbrBonus = abbr.bonus
-  exact = 5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr.pos))
+  exact = 2 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr.pos))
 
   #Whole query is abbreviation ? then => bypass
   if( abbr.count == query.length)
+    return 2 * exact * sz
+
+  #----------------------------
+  # Exact Match
+  # => bypass
+
+  pos = subject_lw.indexOf(query_lw)
+  if pos > -1
+
+    #bonus per consecutive char grow with number of consecutive
+    #so this need to be squared to stay on top.
+    base = wex * n * n
+
+    pos2 = subject.indexOf(query, pos)
+    if( pos2 > -1)
+      #Substring is ExactCase
+      #Search start at pos, because case-sensitive occurrence cannot happens before case-insensitive one.
+      exact += 3 * base
+      pos = pos2 #When we can, use ExactCase position for position based bonus.
+
+    #base bonus + position decay
+    exact += base * (1.0 + tau / (tau + pos))
+
+    #sustring happens right after a separator (prefix)
+    exact += 5 * base if (pos == 0 or subject[pos - 1] of sep_map)
+
+    #sustring happens right before a separator (suffix)
+    exact += base if (pos == m - n or subject[pos + n] of sep_map)
+
+    # Test for abbreviation.
+    #abbr = abbrPrefix(subject, subject_lw, query, query_lw)
+    #abbrBonus = abbr.bonus
+    #exact += 1.5 * wex * abbrBonus * abbrBonus * (1.0 + tau / (tau + abbr.pos))
+
     return exact * sz
+
 
   #----------------------------
   # Individual chars
   # (Smith Waterman algorithm)
+
+  #max string size for O(m*n) best match search
+  m = fuzzyMaxlen if m > fuzzyMaxlen
+  n = fuzzyMaxlen if n > fuzzyMaxlen
 
   #Init
   vRow = new Array(n)
@@ -438,7 +427,6 @@ exports.align = (subject, query, offset = 0) ->
   m = fuzzyMaxlen if m > fuzzyMaxlen
   n = fuzzyMaxlen if n > fuzzyMaxlen
 
-  #precompute lowercase
   subject_lw = subject.toLowerCase()
   query_lw = query.toLowerCase()
 

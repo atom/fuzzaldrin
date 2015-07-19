@@ -167,9 +167,14 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'Status')).toBe 'StatusUrl'
       expect(bestMatch(candidates, 'SU')).toBe 'StatusUrl'
       expect(bestMatch(candidates, 'status')).toBe 'statusurl'
-      expect(bestMatch(candidates, 'su')).toBe 'statusurl'
       expect(bestMatch(candidates, 'statusurl')).toBe 'statusurl'
       expect(bestMatch(candidates, 'StatusUrl')).toBe 'StatusUrl'
+
+    it "account for case while selecting an acronym", ->
+      candidates = ['statusurl', 'status_url', 'StatusUrl']
+      expect(bestMatch(candidates, 'SU')).toBe 'StatusUrl'
+      expect(bestMatch(candidates, 'su')).toBe 'status_url'
+
 
     it "weighs exact case matches higher even if string is longer", ->
       candidates = ['Diagnostic', 'diagnostics0000']

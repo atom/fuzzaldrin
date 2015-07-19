@@ -26,7 +26,7 @@ console.log("Filtering #{lines.length} entries for 'indx' took #{Date.now() - st
 console.log("======")
 
 startTime = Date.now()
-results4 = filter(lines, 'node')
+results4 = filter(lines, 'node', {legacy:true})
 console.log("Filtering #{lines.length} entries for 'node' took #{Date.now() - startTime}ms for #{results4.length} results (~98% of results are positive, Legacy method)")
 
 startTime = Date.now()
@@ -42,10 +42,6 @@ console.log("======")
 startTime = Date.now()
 results5 = filter(lines, 'nodemodules')
 console.log("Filtering #{lines.length} entries for 'nodemodules' took #{Date.now() - startTime}ms for #{results5.length} results (~98% positive + Fuzzy match, [Worst case scenario])")
-
-startTime = Date.now()
-results8 = filter(lines, 'nodemodules', {maxInners:10000})
-console.log("Filtering #{lines.length} entries for 'nodemodules' took #{Date.now() - startTime}ms for #{results8.length} results (Worst case mitigation strategy)")
 
 startTime = Date.now()
 results9 = filter(lines, 'nodemodules', {legacy:true})

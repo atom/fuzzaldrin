@@ -13,16 +13,17 @@ module.exports =
     return 0 unless string
     return 0 unless query
 
+    string_lw = string.toLowerCase()
     coreQuery = scorer.coreChars(query)
-    return 0 unless allowErrors or scorer.isMatch(string,coreQuery)
+    return [] unless allowErrors or scorer.isMatch(string_lw,coreQuery.toLowerCase())
 
     #get "file.ext" from "folder/file.ext"
     pos = query.indexOf(PathSeparator)
     baseQuery = if pos > -1 then query.substring(pos) else query
 
     if not legacy
-      score = scorer.score(string, query)
-      score = scorer.basenameScore(string, baseQuery, score)
+      score = scorer.score(string, query, string_lw, query.toLowerCase())
+      score = scorer.basenameScore(string, baseQuery, score , string_lw, baseQuery.toLowerCase())
     else
       queryHasSlashes = pos > -1
       score = legacy_scorer.score(string, coreQuery, queryHasSlashes)
@@ -36,8 +37,9 @@ module.exports =
     return [] unless query
     return [0...string.length] if string is query
 
-    coreQuery = scorer.coreChars(query)
-    return [] unless allowErrors or scorer.isMatch(string,coreQuery)
+    string_lw = string.toLowerCase()
+    coreQuery_lw = scorer.coreChars(query).toLowerCase()
+    return [] unless allowErrors or scorer.isMatch(string_lw,coreQuery_lw)
 
     #get "file.ext" from "folder/file.ext"
     pos = query.indexOf(PathSeparator)
