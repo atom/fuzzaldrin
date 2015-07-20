@@ -123,7 +123,7 @@ describe "filtering", ->
         rootPath('test', 'filter', 'test.js')
         rootPath('filter', 'test', 'filter.js')
       ]
-      #expect(bestMatch(candidates, path.join('test','filt')  )).toBe candidates[1] ?
+      expect(bestMatch(candidates, path.join('test','filt')  )).toBe candidates[1]
       expect(bestMatch(candidates, path.join('test','filt.') )).toBe candidates[1]
 
   describe "when the candidate is all slashes", ->

@@ -6,22 +6,31 @@ PathSeparator = require('path').sep
 scorer = require './scorer'
 
 
-exports.basenameMatch = (string, query) ->
+exports.basenameMatch = (subject, query) ->
 
   # Skip trailing slashes
-  end = string.length - 1
-  end-- while string[end] is PathSeparator
+  end = subject.length - 1
+  end-- while subject[end] is PathSeparator
 
-  # Get position of basePath of string. If no PathSeparator, no base path exist.
-  basePos = string.lastIndexOf(PathSeparator, end)
+  # Get position of basePath of subject. If no PathSeparator, no base path exist.
+  basePos = subject.lastIndexOf(PathSeparator, end)
+
+  # Get the number of folder in query
+  qdepth = scorer.countDir(query, query.length)
+
+  # Get that many folder from subject
+  while(basePos > -1 && qdepth--)
+    basePos = subject.lastIndexOf(PathSeparator, basePos-1)
+
+  #consumed whole subject ?
   return [] if (basePos == -1)
 
   # Get basePath match
-  exports.match(string.substring(basePos + 1, end + 1), query, basePos+1)
+  exports.match(subject[basePos + 1 ... end + 1], query, basePos+1)
 
 
-exports.match = (string, query, stringOffset=0) ->
-  return scorer.align(string, query, stringOffset)
+exports.match = (subject, query, stringOffset=0) ->
+  return scorer.align(subject, query, stringOffset)
 
 
 #

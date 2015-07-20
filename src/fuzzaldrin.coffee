@@ -17,15 +17,12 @@ module.exports =
     coreQuery = scorer.coreChars(query)
     return [] unless allowErrors or scorer.isMatch(string_lw,coreQuery.toLowerCase())
 
-    #get "file.ext" from "folder/file.ext"
-    pos = query.indexOf(PathSeparator)
-    baseQuery = if pos > -1 then query.substring(pos) else query
-
+    query_lw = query.toLowerCase()
     if not legacy
-      score = scorer.score(string, query, string_lw, query.toLowerCase())
-      score = scorer.basenameScore(string, baseQuery, score , string_lw, baseQuery.toLowerCase())
+      score = scorer.score(string, query, string_lw, query_lw)
+      score = scorer.basenameScore(string, query, score , string_lw, query_lw)
     else
-      queryHasSlashes = pos > -1
+      queryHasSlashes =  query.indexOf(PathSeparator)> -1
       score = legacy_scorer.score(string, coreQuery, queryHasSlashes)
       unless queryHasSlashes
         score = legacy_scorer.basenameScore(string, coreQuery, score)

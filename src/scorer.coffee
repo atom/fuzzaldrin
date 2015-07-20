@@ -115,10 +115,21 @@ exports.basenameScore = (subject, query, fullPathScore, subject_lw = subject.toL
 
   # Get position of basePath of subject. If no PathSeparator, no base path exist.
   basePos = subject.lastIndexOf(PathSeparator, end)
+
+  # Get the number of folder in query
+  qdepth = countDir(query, query.length)
+
+  # Get that many folder from subject
+  while(basePos > -1 && qdepth--)
+    basePos = subject.lastIndexOf(PathSeparator, basePos-1)
+
+  #consumed whole subject ?
   return fullPathScore if (basePos == -1)
 
   # Get basePath score
-  basePathScore = score(subject[basePos + 1 ... end + 1], query, subject_lw[basePos + 1 ... end + 1], query_lw)
+  basePos++
+  end++
+  basePathScore = score(subject[basePos...end], query, subject_lw[basePos...end], query_lw)
 
   # We'll merge some of that base path score with full path score.
   # Mix start favoring base Path then favor full path as directory depth increase
@@ -131,7 +142,7 @@ exports.basenameScore = (subject, query, fullPathScore, subject_lw = subject.toL
 # Count number of folder in a path.
 # (skip consecutive slashes)
 
-countDir = (path, end) ->
+exports.countDir = countDir = (path, end) ->
   return 0 if end < 1
 
   count = 0
