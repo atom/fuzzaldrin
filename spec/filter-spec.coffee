@@ -29,6 +29,17 @@ describe "filtering", ->
     candidates = ['Gruntfile xx', 'filter xx', 'bile xx']
     expect(bestMatch(candidates, 'filex')).toBe candidates[0]
 
+  describe "when query is exact match", ->
+    it "prefer match at word boundary (string limit)", ->
+    candidates = ['gruntfilea', 'agruntfile']
+    expect(bestMatch(candidates, 'file')).toBe candidates[1]
+    expect(bestMatch(candidates, 'grunt')).toBe candidates[0]
+
+    it "prefer match at word boundary (separator limit)", ->
+    candidates = ['hello gruntfilea world', 'hello agruntfile world']
+    expect(bestMatch(candidates, 'file')).toBe candidates[1]
+    expect(bestMatch(candidates, 'grunt')).toBe candidates[0]
+
   describe "when the entries contains slashes", ->
     it "weighs basename matches higher", ->
       candidates = [
@@ -114,9 +125,6 @@ describe "filtering", ->
 
       expect(bestMatch(candidate, "modeluser")).toBe candidate[1]
 
-
-
-
   describe "when the query contains slashes", ->
     it "weighs basename matches higher", ->
       candidates = [
@@ -165,7 +173,6 @@ describe "filtering", ->
     it "weighs exact case matches higher", ->
       candidates = ['statusurl', 'StatusUrl']
       expect(bestMatch(candidates, 'Status')).toBe 'StatusUrl'
-      expect(bestMatch(candidates, 'SU')).toBe 'StatusUrl'
       expect(bestMatch(candidates, 'status')).toBe 'statusurl'
       expect(bestMatch(candidates, 'statusurl')).toBe 'statusurl'
       expect(bestMatch(candidates, 'StatusUrl')).toBe 'StatusUrl'
@@ -174,7 +181,7 @@ describe "filtering", ->
       candidates = ['statusurl', 'status_url', 'StatusUrl']
       expect(bestMatch(candidates, 'SU')).toBe 'StatusUrl'
       expect(bestMatch(candidates, 'su')).toBe 'status_url'
-
+      expect(bestMatch(candidates, 'st')).toBe 'statusurl'
 
     it "weighs exact case matches higher even if string is longer", ->
       candidates = ['Diagnostic', 'diagnostics0000']
@@ -302,7 +309,7 @@ describe "filtering", ->
 
     it "returns the result in order", ->
       candidates = [
-        'Find And Replace: Selet All',
+        'Find And Replace: Select All',
         'Settings View: Uninstall Packages',
         'Settings View: View Installed Themes',
         'Application: Install Update',
