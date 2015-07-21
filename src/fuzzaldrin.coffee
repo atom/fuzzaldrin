@@ -7,6 +7,7 @@ PathSeparator = require('path').sep
 
 module.exports =
   filter: (candidates, query, options) ->
+    return [] unless query and query.length and candidates and candidates.length
     filter(candidates, query, options)
 
   score: (string, query, {allowErrors, legacy}={}) ->

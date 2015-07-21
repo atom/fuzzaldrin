@@ -126,6 +126,9 @@ exports.basenameScore = (subject, query, fullPathScore, subject_lw = subject.toL
   #consumed whole subject ?
   return fullPathScore if (basePos == -1)
 
+  #If fuzzyMaxlen apply, clip to the right  to get as mush of the filename as possible
+  basePos = Math.max(basePos, end - fuzzyMaxlen)
+
   # Get basePath score
   basePos++
   end++
