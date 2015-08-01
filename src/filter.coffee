@@ -13,6 +13,7 @@ module.exports = (candidates, query, queryHasSlashes, {key, maxResults}={}) ->
       score = scorer.score(string, query, queryHasSlashes)
       unless queryHasSlashes
         score = scorer.basenameScore(string, query, score)
+      score = scorer.substringScore(string, query, score)
       scoredCandidates.push({candidate, score}) if score > 0
 
     # Sort scores in descending order

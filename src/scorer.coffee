@@ -42,6 +42,22 @@ exports.basenameScore = (string, query, score) ->
   score *= depth * 0.01
   score
 
+exports.substringScore = (string, query, score) ->
+  # Return a near perfect score if the query is a substring match
+  substrIndex = string.indexOf(query)
+  substrIndexi = string.toLowerCase().indexOf(query.toLowerCase())
+
+  if substrIndex >= 0
+    return score + 1.155 if substrIndex == 0
+    return score + 1.145 if string[substrIndex - 1] == PathSeparator
+    return score + 1.135
+  else if substrIndexi >= 0
+    return score + 1.15 if substrIndexi == 0
+    return score + 1.14 if string[substrIndexi - 1] == PathSeparator
+    return score + 1.13
+
+  return score
+
 exports.score = (string, query) ->
   return 1 if string is query
 
