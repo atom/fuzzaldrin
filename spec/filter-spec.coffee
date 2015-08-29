@@ -125,6 +125,19 @@ describe "filtering", ->
 
       expect(bestMatch(candidate, "modeluser")).toBe candidate[1]
 
+    it "allow to match using wrong slash, space or colon", ->
+      candidate = [
+        path.join('foo', 'bar'),
+        path.join('model', 'user'),
+      ]
+
+      expect(bestMatch(candidate, "model user")).toBe candidate[1]
+      expect(bestMatch(candidate, "model/user")).toBe candidate[1]
+      expect(bestMatch(candidate, "model\\user")).toBe candidate[1]
+      expect(bestMatch(candidate, "model::user")).toBe candidate[1]
+
+
+
   describe "when the query contains slashes", ->
     it "weighs basename matches higher", ->
       candidates = [

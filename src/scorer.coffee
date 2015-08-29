@@ -47,8 +47,13 @@ sep_map = do ->
 # Optional chars
 # Some characters of query char MUST be in subject,
 # Others COULD be there or not, better Score if they are, but don't block isMatch.
+#
+# Interchangeable are,
+# - word separator,
+# - backward/forward slashes (to support multiple OS and php namespace)
+# - colon (to support Rails  namespace)
 
-opt_char_re = /[ _\-]/g
+opt_char_re = /[ _\-:\/\\]/g
 
 exports.coreChars = coreChars = (query) ->
   return query.replace(opt_char_re, '')
