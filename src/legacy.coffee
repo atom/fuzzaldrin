@@ -89,7 +89,7 @@ queryIsLastPathSegment = (string, query) ->
     string.lastIndexOf(query) is string.length - query.length
 
 
-exports.match = (string, query, stringOffset=0) ->
+exports.match = (string, query, stringOffset = 0) ->
   return [stringOffset...stringOffset + string.length] if string is query
 
   queryLength = query.length

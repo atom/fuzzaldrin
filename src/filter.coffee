@@ -5,39 +5,34 @@ pluckCandidates = (a) -> a.candidate
 sortCandidates = (a, b) -> b.score - a.score
 PathSeparator = require('path').sep
 
-
-module.exports = (candidates, query, {key, maxResults, maxInners, allowErrors, legacy }={}) ->
+module.exports = (candidates, query, {key, maxResults, maxInners, allowErrors, legacy, fuzzyWindow }={}) ->
 
   scoredCandidates = []
 
   # when query is to generic to select a few case, do reasonable effort to process results
   # then return to user to let him precise the query. (consider that many positive candidate
   # on the working list before going to sort and output maxResults best ones )
-  maxInners = 10000 unless maxInners?
-  spotLeft = if maxInners>0 then maxInners else candidates.length
+  maxInners ?= Math.max(2000, Math.floor(0.2*candidates.length))
+  spotLeft = if maxInners > 0 then maxInners else candidates.length
 
-  # allow any character of query to be optional (but better score if they are present)
-  allowErrorsInQuery = !!allowErrors
+  fuzzyWindow ?= scorer.defaultSearchWindow
 
-  # or allow only some characters to be optional, for example: space and space like characters
-  coreQuery = if allowErrorsInQuery then query else scorer.coreChars(query)
-  coreQuery_lw = coreQuery.toLowerCase()
-  query_lw = query.toLowerCase()
+  bAllowErrors = !!allowErrors
+  prepQuery = scorer.prepQuery(query)
 
   if(not legacy)
     for candidate in candidates
       string = if key? then candidate[key] else candidate
       continue unless string
-      string_lw = string.toLowerCase()
-      continue unless allowErrorsInQuery or scorer.isMatch(string_lw, coreQuery_lw)
-      score = scorer.score(string, query, string_lw, query_lw)
-      score = scorer.basenameScore(string, query, score, string_lw, query_lw)
+      score = scorer.score(string, query, prepQuery, bAllowErrors, fuzzyWindow)
       if score > 0
         scoredCandidates.push({candidate, score})
         break unless --spotLeft
 
   else
-    queryHasSlashes = query.indexOf(PathSeparator)> -1
+    queryHasSlashes = prepQuery.depth > 0
+    coreQuery = prepQuery.core
+
     for candidate in candidates
       string = if key? then candidate[key] else candidate
       continue unless string

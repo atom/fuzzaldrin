@@ -6,40 +6,41 @@ matcher = require './matcher'
 PathSeparator = require('path').sep
 
 module.exports =
+
   filter: (candidates, query, options) ->
-    return [] unless query and query.length and candidates and candidates.length
+    return [] unless query?.length and candidates?.length
     filter(candidates, query, options)
 
-  score: (string, query, {allowErrors, legacy}={}) ->
-    return 0 unless string
-    return 0 unless query
+  score: (string, query, prepQuery = scorer.prepQuery(query), {allowErrors, legacy, fuzzyWindow}={}) ->
+    return 0 unless string?.length and query?.length
 
-    string_lw = string.toLowerCase()
-    coreQuery = scorer.coreChars(query)
-    return [] unless allowErrors or scorer.isMatch(string_lw,coreQuery.toLowerCase())
+    fuzzyWindow ?= scorer.defaultSearchWindow
 
-    query_lw = query.toLowerCase()
     if not legacy
-      score = scorer.score(string, query, string_lw, query_lw)
-      score = scorer.basenameScore(string, query, score , string_lw, query_lw)
+      score = scorer.score(string, query, prepQuery, !!allowErrors, fuzzyWindow)
     else
-      queryHasSlashes =  query.indexOf(PathSeparator)> -1
+      queryHasSlashes = prepQuery.depth > 0
+      coreQuery = prepQuery.core
       score = legacy_scorer.score(string, coreQuery, queryHasSlashes)
       unless queryHasSlashes
         score = legacy_scorer.basenameScore(string, coreQuery, score)
 
     score
 
+  prepQuery: (query) ->
+    scorer.prepQuery(query)
+
   match: (string, query, {allowErrors}={}) ->
+
     return [] unless string
     return [] unless query
     return [0...string.length] if string is query
 
     string_lw = string.toLowerCase()
     coreQuery_lw = scorer.coreChars(query).toLowerCase()
-    return [] unless allowErrors or scorer.isMatch(string_lw,coreQuery_lw)
+    return [] unless allowErrors or scorer.isMatch(string_lw, coreQuery_lw)
 
-    #get "file.ext" from "folder/file.ext"
+    #get base path ("file.ext" from "folder/file.ext) "
     pos = query.indexOf(PathSeparator)
     baseQuery = if pos > -1 then query.substring(pos) else query
 
@@ -56,7 +57,7 @@ module.exports =
       baseMatches = matcher.basenameMatch(string, baseQuery)
 
       # Combine the results, removing duplicate indexes
-      matches = matcher.mergeMatches(matches,baseMatches)
+      matches = matcher.mergeMatches(matches, baseMatches)
 
     matches
 

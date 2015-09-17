@@ -57,10 +57,6 @@ describe "match(string, query)", ->
   it "account for case in selecting camelCase vs consecutive", ->
     expect(match('0xACACAC: CamelControlClass.ccc', 'CCC')).toEqual [ 10, 15, 22]
     expect(match('0xACACAC: CamelControlClass.ccc', 'ccc')).toEqual [ 28, 29, 30]
-    expect(match('0xACACAC: CamelControlClass.ccc xfiller', 'cccx')).toEqual [ 28, 29, 30, 32]
-
-    expect(match('0xACACAC: CamelControlClass', 'ccc')).toEqual [ 10, 15, 22]
-    expect(match('0xACACAC: CamelControlClass', 'CCC')).toEqual [ 10, 15, 22]
 
 
 
