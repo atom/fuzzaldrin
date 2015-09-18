@@ -25,6 +25,10 @@ describe "filtering", ->
     candidates = ['Gruntfile', 'filter', 'bile', null, '', undefined]
     expect(filter(candidates, 'file')).toEqual ['Gruntfile', 'filter']
 
+  it "require all character to be present", ->
+    candidates = ["Application:Hide"]
+    expect(filter(candidates, 'help')).toEqual []
+
   describe "when the maxResults option is set", ->
     it "limits the results to the result size", ->
       candidates = ['Gruntfile', 'filter', 'bile']
@@ -335,11 +339,20 @@ describe "filtering", ->
     it "allow CamelCase to match even outside of acronym prefix", ->
 
       candidates = [
-        'Git Plus: Sacha',
+        'Git Plus: Stash Save',
+        'Git Plus: Add And Commit',
         'Git Plus: Add All',
       ]
-      expect(bestMatch(candidates, 'git aa')).toBe candidates[1]
-      expect(bestMatch(candidates, 'Git AA')).toBe candidates[1]
+
+      result = filter(candidates, 'git AA')
+      expect(result[0]).toBe candidates[2]
+      expect(result[1]).toBe candidates[1]
+      expect(result[2]).toBe candidates[0]
+
+      #result = filter(candidates, 'git aa')
+      #expect(result[0]).toBe candidates[2]
+      #expect(result[1]).toBe candidates[1]
+      #expect(result[2]).toBe candidates[0]
 
 
     it "account for match structure in CamelCase vs Substring matches", ->
@@ -362,10 +375,12 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'git push')).toBe candidates[1]
       expect(bestMatch(candidates, 'psh')).toBe candidates[0]
 
+    # expect(bestMatch(candidates, 'git PSH')).toBe candidates[0]
+    # expect(bestMatch(candidates, 'git psh')).toBe candidates[0]
+    #
     # not yet supported, because we only scan acronym structure on the start of the query (acronym prefix) :(
     # it might be possible to handle uppercase playing with case sensitivity instead of structure.
-    # expect(bestMatch(candidates, 'git psh')).toBe candidates[0]
-    # expect(bestMatch(candidates, 'git PSH')).toBe candidates[0]
+
 
     it "account for case in CamelCase vs Substring matches", ->
 
@@ -541,6 +556,12 @@ describe "filtering", ->
 
       expect(bestMatch(candidates, 'user')).toBe candidates[1]
 
+      candidates = [
+        path.join('lib', 'exportable.rb'),
+        path.join('app', 'models', 'table.rb')
+      ]
+      expect(bestMatch(candidates, 'table')).toBe candidates[1]
+
 
       candidates = [
         path.join('db', 'emails', 'en', 'refund_notification.html'),
@@ -617,12 +638,6 @@ describe "filtering", ->
       ]
       expect(bestMatch(candidates, 'br f')).toBe candidates[1]
 
-      candidates = [
-        rootPath('barfoo', 'foo')
-        rootPath('foo', 'barfoo')
-      ]
-      expect(bestMatch(candidates, 'bar f')).toBe candidates[1]
-
     it "allow basename bonus to handle query with folder", ->
 
       # Without support for optional character, the basename bonus
@@ -647,7 +662,7 @@ describe "filtering", ->
       expect(bestMatch(candidate, path.join("src", "app"))).toBe candidate[1]
 
       candidate = [
-        path.join('javascript', 'template', 'emails-dialogs.handlebars'),
+        path.join('template', 'emails-dialogs.handlebars'),
         path.join('emails', 'handlers.py')
       ]
 

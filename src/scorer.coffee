@@ -14,9 +14,9 @@ PathSeparator = require('path').sep
 wm = 150
 
 #Fading function
-pos_bonus = 20  # The character from 0..pos_bonus receive a bonus for being at the start of string.
-                # max pos bonus occurs at position 0 and have value of pos_bonus^2
-                # The ratio of max pos bonus and wm set importance of start of string position in overall score.
+pos_bonus = 20 # The character from 0..pos_bonus receive a bonus for being at the start of string.
+# max pos bonus occurs at position 0 and have value of pos_bonus^2
+# The ratio of max pos bonus and wm set importance of start of string position in overall score.
 
 tau_size = 50 # Size at which the whole match score is halved.
 tau_depth = 13 # Directory depth at which the full path influence is halved
@@ -68,7 +68,6 @@ exports.score = (string, query, prepQuery = new Query(query), allowErrors = fals
 
 class Query
   constructor: (query) ->
-
     return null unless query?.length
 
     @query = query
@@ -96,23 +95,20 @@ exports.isMatch = isMatch = (subject_lw, query_lw) ->
 
   i = -1
   j = -1
-  k = m - 1
 
   #foreach char of query
   while ++j < n
 
     qj_lw = query_lw[j]
 
-    #continue search in subject from last match
+    # continue search in subject from last match
+    # until first positive or until we reach the end.
     while ++i < m
+      break if subject_lw[i] == qj_lw
 
-      #found match, go to next char of query
-      if subject_lw[i] == qj_lw
-        break
-
-        #last char of query AND no match
-      else if i == k
-        return false
+    # if we reach the end of the string then we do not have a match.
+    # unless we are scanning last char of query and we have a match.
+    if i == m then return (j == n - 1 and subject_lw[i - 1] == qj_lw)
 
 
   return true
@@ -124,7 +120,6 @@ exports.isMatch = isMatch = (subject_lw, query_lw) ->
 #
 
 doScore = (subject, subject_lw, prepQuery, fuzzyWindow) ->
-
   query = prepQuery.query
   query_lw = prepQuery.query_lw
 
@@ -218,7 +213,6 @@ doScore = (subject, subject_lw, prepQuery, fuzzyWindow) ->
 #
 
 isWordStart = (pos, subject, subject_lw) ->
-
   return false if pos < 0
   return true if pos == 0 # match is FIRST char ( place a virtual token separator before first char of string)
   prev_s = subject[pos - 1]
@@ -227,7 +221,6 @@ isWordStart = (pos, subject, subject_lw) ->
 
 
 isWordEnd = (pos, subject, subject_lw, len) ->
-
   return false if pos > len - 1
   return true if  pos == len - 1 # last char of string
   next_s = subject[pos + 1]
@@ -257,9 +250,8 @@ scoreSize = (n, m) ->
 # and structural quality of the pattern on the overall string (word boundary)
 #
 
-exports.scorePattern =  scorePattern = (count, len, sameCase, start, end) ->
-
-  return 1 + sameCase if count is 1
+exports.scorePattern = scorePattern = (count, len, sameCase, start, end) ->
+  return 1 + 2 * sameCase if count is 1
 
   sz = count
 
@@ -292,7 +284,7 @@ exports.scoreCharacter = scoreCharacter = (subject, subject_lw, query, i, j, acr
 
   #match IS a word boundary:
   if isWordStart(i, subject, subject_lw)
-    return posBonus + wm * ( (if acro_score > csc_score then acro_score else csc_score) + 5  )
+    return posBonus + wm * ( (if acro_score > csc_score then acro_score else csc_score) + 10  )
 
   #normal Match, add proper case bonus
   return posBonus + wm * csc_score
@@ -303,7 +295,6 @@ exports.scoreCharacter = scoreCharacter = (subject, subject_lw, query, i, j, acr
 #
 
 exports.scoreConsecutives = scoreConsecutives = (subject, subject_lw, query, query_lw, i, j) ->
-
   m = subject.length
   n = query.length
 
@@ -322,7 +313,7 @@ exports.scoreConsecutives = scoreConsecutives = (subject, subject_lw, query, que
   while (++sz < k and query_lw[++j] == subject_lw[++i])
     sameCase++ if (query[j] == subject[i])
 
-  return 1 + sameCase if sz is 1
+  return 1 + 2 * sameCase if sz is 1
 
   # In a multi word query like "Git Commit" the consecutive sequence can start with a separator, here <space>.
   # We want to register this as a start of word match.
@@ -358,8 +349,7 @@ class AcronymResult
 
 emptyAcronymResult = new AcronymResult(0, 0.1, 0)
 
-exports.scoreAcronyms =  scoreAcronyms = (subject, subject_lw, query, query_lw) ->
-
+exports.scoreAcronyms = scoreAcronyms = (subject, subject_lw, query, query_lw) ->
   m = subject.length
   n = query.length
   return emptyAcronymResult unless m and n
