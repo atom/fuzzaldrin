@@ -251,7 +251,6 @@ scoreSize = (n, m) ->
 #
 
 exports.scorePattern = scorePattern = (count, len, sameCase, start, end) ->
-  return 1 + 2 * sameCase if count is 1
 
   sz = count
 
