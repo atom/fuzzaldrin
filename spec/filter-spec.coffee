@@ -112,6 +112,21 @@ describe "filtering", ->
 
       expect(bestMatch(candidates, 'core')).toBe candidates[1]
 
+    it "prefer single letter start-of-word exact match vs longer query", ->
+
+      candidates = [
+        'Timecop:View',
+        'Markdown Preview: Copy Html'
+      ]
+      expect(bestMatch(candidates, 'm')).toBe candidates[1]
+
+      candidates = [
+        'Welcome:show',
+        'Markdown Preview: Toggle Break On Newline'
+      ]
+      expect(bestMatch(candidates, 'm')).toBe candidates[1]
+
+
 
   #---------------------------------------------------
   #
@@ -396,6 +411,9 @@ describe "filtering", ->
       #then for general purpose match.
       expect(bestMatch(candidates, 'CCCa')).toBe candidates[0]
       expect(bestMatch(candidates, 'ccca')).toBe candidates[1]
+
+
+
 
 
   #---------------------------------------------------
