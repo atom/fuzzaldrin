@@ -5,13 +5,13 @@ path = require 'path'
 
 lines = fs.readFileSync(path.join(__dirname, 'data.txt'), 'utf8').trim().split('\n')
 
-#warmup + compile
-filter(lines, 'index')
-filter(lines, 'index', {legacy:true})
-
 forceAllMatch = {maxInners:-1}
 legacy = {legacy:true}
+mitigation = {maxInners:Math.floor(0.2*lines.length)}
 
+#warmup + compile
+filter(lines, 'index', forceAllMatch)
+filter(lines, 'index', legacy)
 
 
 console.log("======")
@@ -79,7 +79,7 @@ results = filter(lines, 'nodemodules', forceAllMatch)
 console.log("Filtering #{lines.length} entries for 'nodemodules' took #{Date.now() - startTime}ms for #{results.length} results (~98% positive + Fuzzy match, [Worst case scenario])")
 
 startTime = Date.now()
-results = filter(lines, 'nodemodules')
+results = filter(lines, 'nodemodules', mitigation)
 console.log("Filtering #{lines.length} entries for 'nodemodules' took #{Date.now() - startTime}ms for #{results.length} results (~98% positive + Fuzzy match, [Mitigation])")
 
 startTime = Date.now()

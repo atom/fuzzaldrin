@@ -15,18 +15,16 @@ wm = 150
 
 #Fading function
 pos_bonus = 20 # The character from 0..pos_bonus receive a bonus for being at the start of string.
-# max pos bonus occurs at position 0 and have value of pos_bonus^2
-# The ratio of max pos bonus and wm set importance of start of string position in overall score.
-
 tau_size = 50 # Size at which the whole match score is halved.
 tau_depth = 13 # Directory depth at which the full path influence is halved
 
-# There is a compromise where user expects better pattern to win despite being
-# in a longer string, later in the string, deeper directory etc.
-#
-# The knob are should be adjusted to they are as strong as possible without any test failing.
-# This mean some test will barely pass. And making change might require a re-tuning of those number.
-
+# Miss count
+# When subject[i] == query[j] we register a hit.
+# Limiting hit put a boundary on how many permutation we consider to find the best one.
+# Help to speed up the processing of deep path and frequent character eg vowels
+# If a spec with frequent repetition fail, increase this.
+# This has a direct influence on worst case scenario benchmark.
+miss_coeff = 1 #Max number missed consecutive hit = miss_coeff*query.length + 5
 
 #
 # Optional chars
@@ -37,16 +35,6 @@ opt_char_re = /[ _\-:\/\\]/g
 exports.coreChars = coreChars = (query) ->
   return query.replace(opt_char_re, '')
 
-#
-# Search windows for fuzzy matching.
-#
-# IsMatch & Exact Matches (IndexOf & Acronym) use the full string.
-#
-# But character per character optimal alignment is expensive
-# So we use a search window at the start of the string to control cost.
-#
-
-exports.defaultSearchWindow = 64
 
 #
 # Main export
@@ -54,18 +42,17 @@ exports.defaultSearchWindow = 64
 # Manage the logic of testing if there's a match and calling the main scoring function
 # Also manage scoring a path and optional character.
 
-exports.score = (string, query, prepQuery = new Query(query), allowErrors = false, fuzzyWindow = exports.defaultSearchWindow) ->
+exports.score = (string, query, prepQuery = new Query(query), allowErrors = false) ->
   string_lw = string.toLowerCase()
   return 0 unless allowErrors or exports.isMatch(string_lw, prepQuery.core_lw)
-  score = doScore(string, string_lw, prepQuery, fuzzyWindow)
-  return Math.floor(basenameScore(string, string_lw, prepQuery, score, fuzzyWindow))
+  score = doScore(string, string_lw, prepQuery)
+  return Math.ceil(basenameScore(string, string_lw, prepQuery, score))
+
 
 
 #
 # Query object
 #
-
-
 class Query
   constructor: (query) ->
     return null unless query?.length
@@ -119,14 +106,13 @@ exports.isMatch = isMatch = (subject_lw, query_lw) ->
 # Main scoring algorithm
 #
 
-doScore = (subject, subject_lw, prepQuery, fuzzyWindow) ->
+doScore = (subject, subject_lw, prepQuery) ->
   query = prepQuery.query
   query_lw = prepQuery.query_lw
 
   m = subject.length
   n = query.length
 
-  sz = scoreSize(n, m)
 
   #----------------------------
   # Abbreviations sequence
@@ -137,7 +123,7 @@ doScore = (subject, subject_lw, prepQuery, fuzzyWindow) ->
   # Whole query is abbreviation ?
   # => use that as score
   if( acro.count == n)
-    return 2 * n * ( wm * acro_score + scorePosition(acro.pos) ) * sz
+    return scoreExact(n, m, acro_score, acro.pos)
 
   #----------------------------
   # Exact Match ?
@@ -145,20 +131,20 @@ doScore = (subject, subject_lw, prepQuery, fuzzyWindow) ->
 
   pos = subject_lw.indexOf(query_lw)
   if pos > -1
-    return 2 * n * (  wm * scoreExactMatch(subject, subject_lw, query, pos, n, m) + scorePosition(pos) ) * sz
+    return scoreExactMatch(subject, subject_lw, query, query_lw, pos, n, m)
 
 
   #----------------------------
   # Individual characters
   # (Smith Waterman algorithm)
 
-  #max string size for O(m*n) best match search
-  m = fuzzyWindow if m > fuzzyWindow
-  n = fuzzyWindow if n > fuzzyWindow
 
   #Init
   score_row = new Array(n)
   csc_row = new Array(n)
+  sz = scoreSize(n, m)
+
+  miss_left = miss_budget = miss_coeff*n+5
 
   #Fill with 0
   j = -1
@@ -166,7 +152,16 @@ doScore = (subject, subject_lw, prepQuery, fuzzyWindow) ->
     score_row[j] = 0
     csc_row[j] = 0
 
-  i = -1 #0..m-1
+
+  # Limit the search for the active region
+  # Before first letter, or -1
+  i = subject_lw.indexOf(query_lw[0])
+  if(i > -1) then i--
+
+  # After last letter
+  mm = subject_lw.lastIndexOf(query_lw[n - 1], m)
+  if(mm > i) then m = mm + 1
+
   while ++i < m     #foreach char si of subject
 
     score = 0
@@ -177,32 +172,47 @@ doScore = (subject, subject_lw, prepQuery, fuzzyWindow) ->
     j = -1 #0..n-1
     while ++j < n   #foreach char qj of query
 
-      #reset score
+      # What is the best gap ?
+      # score_up contain the score of a gap in subject.
+      # score_left = last iteration of score, -> gap in query.
+      score_up = score_row[j]
+      if(score_up > score ) then score = score_up
+
+      #Reset consecutive
       csc_score = 0
-      align = 0
 
       #Compute a tentative match
       if ( query_lw[j] == si_lw )
 
+        start = isWordStart(i, subject, subject_lw)
+
         # Forward search for a sequence of consecutive char
-        csc_score = if csc_diag > 0  then csc_diag else scoreConsecutives(subject, subject_lw, query, query_lw, i, j)
+        csc_score = if csc_diag > 0  then csc_diag else scoreConsecutives(subject, subject_lw, query, query_lw, i,
+          j, start)
 
         # Determine bonus for matching A[i] with B[j]
-        align = score_diag + scoreCharacter(subject, subject_lw, query, i, j, acro_score, csc_score)
+        align = score_diag + scoreCharacter(i, j, start, acro_score, csc_score)
+
+        #Are we better using this match or taking the best gap (currently stored in score)?
+        if(align > score)
+          score =  align
+          # reset consecutive missed hit count
+          miss_left = miss_budget
+        else
+          # We rejected this match and record a miss.
+          # If budget is exhausted exit
+          # Each character of query have it's score history stored in score_row
+          # To get full query score use last item of row.
+          if(--miss_left <= 0) then return score_row[n - 1] * sz
+
 
       #Prepare next sequence & match score.
-      score_diag = score_row[j]
+      score_diag = score_up
       csc_diag = csc_row[j]
+      csc_row[j] = csc_score
+      score_row[j] = score
 
-      #Compare the score of making a match, a gap in Query (A), or a gap in Subject (B)
-      gap = if(score > score_diag) then score else score_diag
 
-      if(align > gap)
-        score_row[j] = score = align
-        csc_row[j] = csc_score
-      else
-        score_row[j] = score = gap
-        csc_row[j] = 0 #If we do not use this character reset consecutive sequence.
 
   return score * sz
 
@@ -210,38 +220,46 @@ doScore = (subject, subject_lw, prepQuery, fuzzyWindow) ->
 # Boundaries
 #
 # Is the character at the start of a word, end of the word, or a separator ?
+# Fortunately those small function inline well.
 #
 
-isWordStart = (pos, subject, subject_lw) ->
+exports.isWordStart = isWordStart = (pos, subject, subject_lw) ->
   return false if pos < 0
   return true if pos == 0 # match is FIRST char ( place a virtual token separator before first char of string)
+  curr_s = subject[pos]
   prev_s = subject[pos - 1]
-  return isSeparator(prev_s) or # match FOLLOW a separator
-      (  subject[pos] != subject_lw[pos] and prev_s == subject_lw[pos - 1] ) # match is Capital in camelCase (preceded by lowercase)
+  return isSeparator(curr_s) or isSeparator(prev_s) or # match FOLLOW a separator
+      (  curr_s != subject_lw[pos] and prev_s == subject_lw[pos - 1] ) # match is Capital in camelCase (preceded by lowercase)
 
 
-isWordEnd = (pos, subject, subject_lw, len) ->
+exports.isWordEnd = isWordEnd = (pos, subject, subject_lw, len) ->
   return false if pos > len - 1
   return true if  pos == len - 1 # last char of string
   next_s = subject[pos + 1]
   return isSeparator(next_s) or # pos is followed by a separator
       ( subject[pos] == subject_lw[pos] and next_s != subject_lw[pos + 1] ) # pos is lowercase, followed by uppercase
 
-# This is MUCH faster than `c in separator_list` or `c of separator_map`
-# cut about 30% of processing time on worst case scenario
 
 isSeparator = (c) ->
   return c == ' ' or c == '.' or c == '-' or c == '_' or c == '/' or c == '\\'
 
+#
+# Scoring helper
+#
 
 scorePosition = (pos) ->
-  return 0 if pos > pos_bonus
-  sc = pos_bonus - pos
-  return sc * sc
+  if pos < pos_bonus
+    sc = pos_bonus - pos
+    return 100 + sc * sc
+  else
+    return 100 + pos_bonus - pos
 
 scoreSize = (n, m) ->
   # Size penalty, use the difference of size (m-n)
   return tau_size / ( tau_size + Math.abs(m - n))
+
+scoreExact = (n, m, quality, pos) ->
+  return 2 * n * ( wm * quality + scorePosition(pos) ) * scoreSize(n, m)
 
 
 #
@@ -251,7 +269,6 @@ scoreSize = (n, m) ->
 #
 
 exports.scorePattern = scorePattern = (count, len, sameCase, start, end) ->
-
   sz = count
 
   bonus = 6 # to Enforce size ordering, this should be as large other bonus combined
@@ -275,14 +292,13 @@ exports.scorePattern = scorePattern = (count, len, sameCase, start, end) ->
 # Compute the bonuses for two chars that are confirmed to matches in a case-insensitive way
 #
 
-exports.scoreCharacter = scoreCharacter = (subject, subject_lw, query, i, j, acro_score, csc_score) ->
-
+exports.scoreCharacter = scoreCharacter = (i, j, start, acro_score, csc_score) ->
 
   #start of string bonus
   posBonus = scorePosition(i)
 
   #match IS a word boundary:
-  if isWordStart(i, subject, subject_lw)
+  if start
     return posBonus + wm * ( (if acro_score > csc_score then acro_score else csc_score) + 10  )
 
   #normal Match, add proper case bonus
@@ -293,7 +309,7 @@ exports.scoreCharacter = scoreCharacter = (subject, subject_lw, query, i, j, acr
 # Forward search for a sequence of consecutive character.
 #
 
-exports.scoreConsecutives = scoreConsecutives = (subject, subject_lw, query, query_lw, i, j) ->
+exports.scoreConsecutives = scoreConsecutives = (subject, subject_lw, query, query_lw, i, j, start) ->
   m = subject.length
   n = query.length
 
@@ -305,27 +321,42 @@ exports.scoreConsecutives = scoreConsecutives = (subject, subject_lw, query, que
   sameCase = 0
   sz = 0 #sz will be one more than the last qi == sj
 
-  # query_lw[i] == subject_lw[j] has been checked before entering
-  # now do case sensitive check.
+  # query_lw[i] == subject_lw[j] has been checked before entering now do case sensitive check.
   sameCase++ if (query[j] == subject[i])
 
+  #Continue while lowercase char are the same, record when they are case-sensitive match.
   while (++sz < k and query_lw[++j] == subject_lw[++i])
     sameCase++ if (query[j] == subject[i])
 
+  # Faster path for single match.
+  # Isolated character match occurs often and are not really interesting.
+  # Fast path so we don't compute expensive pattern score on them.
+  # Acronym should be addressed with acronym context bonus instead of consecutive.
   return 1 + 2 * sameCase if sz is 1
 
-  # In a multi word query like "Git Commit" the consecutive sequence can start with a separator, here <space>.
-  # We want to register this as a start of word match.
-  start = isWordStart(startPos, subject, subject_lw) or isSeparator(subject_lw[startPos])
-  end = isWordEnd(i, subject, subject_lw, m)
-  return scorePattern(sz, n, sameCase, start, end)
+  return scorePattern(sz, n, sameCase, start, isWordEnd(i, subject, subject_lw, m))
 
 
 #
 # Compute the score of an exact match at position pos.
 #
 
-exports.scoreExactMatch = scoreExactMatch = (subject, subject_lw, query, pos, n, m) ->
+exports.scoreExactMatch = scoreExactMatch = (subject, subject_lw, query, query_lw, pos, n, m) ->
+
+  # Test for word start
+  start = isWordStart(pos, subject, subject_lw)
+
+  # Heuristic
+  # If not a word start, test next occurrence
+  # - We want exact match to be fast
+  # - For exact match, word start has the biggest impact on score.
+  # - Testing 2 instances is somewhere between testing only one and testing every instances.
+
+  if not start
+    pos2 = subject_lw.indexOf(query_lw, pos+1)
+    if pos2 > -1
+      start = isWordStart(pos2, subject, subject_lw)
+      pos = pos2 if start
 
   #Exact case bonus.
   i = -1
@@ -334,9 +365,9 @@ exports.scoreExactMatch = scoreExactMatch = (subject, subject_lw, query, pos, n,
     if (query[pos + i] == subject[i])
       sameCase++
 
-  start = isWordStart(pos, subject, subject_lw) or isSeparator(subject_lw[pos])
   end = isWordEnd(pos + n - 1, subject, subject_lw, m)
-  return scorePattern(n, n, sameCase, start, end)
+
+  return scoreExact(n, m, scorePattern(n, n, sameCase, start, end), pos)
 
 
 #
@@ -397,7 +428,7 @@ exports.scoreAcronyms = scoreAcronyms = (subject, subject_lw, query, query_lw) -
 # Score adjustment for path
 #
 
-basenameScore = (subject, subject_lw, prepQuery, fullPathScore, fuzzyWindow) ->
+basenameScore = (subject, subject_lw, prepQuery, fullPathScore) ->
   return 0 if fullPathScore == 0
 
 
@@ -419,13 +450,10 @@ basenameScore = (subject, subject_lw, prepQuery, fullPathScore, fuzzyWindow) ->
     basePos = subject.lastIndexOf(PathSeparator, basePos - 1)
     if (basePos == -1) then return fullPathScore #consumed whole subject ?
 
-  #If fuzzyWindow limit apply, clip to the right  to get as much of the filename as possible
-  basePos = Math.max(basePos, end - fuzzyWindow)
-
   # Get basePath score
   basePos++
   end++
-  basePathScore = doScore(subject[basePos...end], subject_lw[basePos...end], prepQuery, fuzzyWindow)
+  basePathScore = doScore(subject[basePos...end], subject_lw[basePos...end], prepQuery)
 
   # Final score is linear interpolation between base score and full path score.
   # For low directory depth, interpolation favor base Path then include more of full path as depth increase
@@ -435,6 +463,8 @@ basenameScore = (subject, subject_lw, prepQuery, fullPathScore, fuzzyWindow) ->
 
   alpha = 0.5 * tau_depth / ( tau_depth + countDir(subject, end + 1) )
   return  alpha * basePathScore + (1 - alpha) * fullPathScore * scoreSize(0, 0.5 * (end - basePos))
+
+
 
 #
 # Count number of folder in a path.

@@ -11,13 +11,21 @@ module.exports =
     return [] unless query?.length and candidates?.length
     filter(candidates, query, options)
 
-  score: (string, query, prepQuery = scorer.prepQuery(query), {allowErrors, legacy, fuzzyWindow}={}) ->
+  #
+  # While the API is backward compatible,
+  # the following pattern is recommended for speed.
+  #
+  # query = ...
+  # prepared = fuzzaldrin.prepQuery(query)
+  # for candidate in candidates
+  #    score = fuzzaldrin.score(candidate, query, prepared)
+  #
+
+  score: (string, query, prepQuery = scorer.prepQuery(query), {allowErrors, legacy}={}) ->
     return 0 unless string?.length and query?.length
 
-    fuzzyWindow ?= scorer.defaultSearchWindow
-
     if not legacy
-      score = scorer.score(string, query, prepQuery, !!allowErrors, fuzzyWindow)
+      score = scorer.score(string, query, prepQuery, !!allowErrors)
     else
       queryHasSlashes = prepQuery.depth > 0
       coreQuery = prepQuery.core

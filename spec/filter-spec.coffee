@@ -115,16 +115,30 @@ describe "filtering", ->
     it "prefer single letter start-of-word exact match vs longer query", ->
 
       candidates = [
-        'Timecop:View',
+        'Timecop: View',
         'Markdown Preview: Copy Html'
       ]
       expect(bestMatch(candidates, 'm')).toBe candidates[1]
 
       candidates = [
-        'Welcome:show',
+        'Welcome: Show',
         'Markdown Preview: Toggle Break On Newline'
       ]
       expect(bestMatch(candidates, 'm')).toBe candidates[1]
+
+      candidates = [
+        'TODO',
+        path.join('doc','README')
+      ]
+      expect(bestMatch(candidates, 'd')).toBe candidates[1]
+
+    it "can select a better occurrence that happens latter in string", ->
+
+      candidates = [
+        'Test Espanol',
+        'Portuges'
+      ]
+      expect(bestMatch(candidates, 'es')).toBe candidates[0]
 
 
 
@@ -135,10 +149,7 @@ describe "filtering", ->
 
   describe "when query match in multiple group", ->
 
-    # string limit, separator limit, camelCase limit
-    # reuse the same method as exact match, should that change, insert test here.
-
-    it "it ranks full-word > start-of-word > end-of-word > middle-of-word > scattered letters", ->
+    it "ranks full-word > start-of-word > end-of-word > middle-of-word > scattered letters", ->
 
       candidates = [
         'model-controller'
@@ -155,7 +166,7 @@ describe "filtering", ->
       expect(result[3]).toBe candidates[1]
       expect(result[4]).toBe candidates[0]
 
-    it "it ranks full-word > start-of-word > end-of-word > middle-of-word > scattered letters (VS directory depth)", ->
+    it "ranks full-word > start-of-word > end-of-word > middle-of-word > scattered letters (VS directory depth)", ->
 
       candidates = [
         path.join('model', 'controller'),
@@ -181,7 +192,7 @@ describe "filtering", ->
       ]
       expect(bestMatch(candidates, 'acon')).toBe candidates[1]
 
-    it "prefer larger group of consecutive letter", ->
+    it "prefers larger group of consecutive letter", ->
 
       #Here all group score the same context (full word).
 
@@ -200,7 +211,7 @@ describe "filtering", ->
       expect(result[3]).toBe candidates[1]
       expect(result[4]).toBe candidates[0]
 
-    it "prefer larger group of consecutive letter VS better context", ->
+    it "prefers larger group of consecutive letter VS better context", ->
 
       #Only apply when EVERY lowe quality context group are longer or equal length
 
@@ -218,7 +229,7 @@ describe "filtering", ->
 
       expect(bestMatch(candidates, 'abcdef')).toBe candidates[1]
 
-    it "allow consecutive character in path overcome deeper path", ->
+    it "allows consecutive character in path overcome deeper path", ->
 
       candidates = [
         path.join('controller', 'app.rb')
@@ -247,7 +258,7 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'statusurl')).toBe 'statusurl'
       expect(bestMatch(candidates, 'StatusUrl')).toBe 'StatusUrl'
 
-    it "account for case while selecting an acronym", ->
+    it "accounts for case while selecting an acronym", ->
       candidates = ['statusurl', 'status_url', 'StatusUrl']
       expect(bestMatch(candidates, 'SU')).toBe 'StatusUrl'
       expect(bestMatch(candidates, 'su')).toBe 'status_url'
@@ -289,7 +300,7 @@ describe "filtering", ->
       # Alignment match "t" of factor preventing to score "T" of Test
       expect(bestMatch(candidates, 'FFT')).toBe 'FilterFactorTests.html'
 
-    it "prefer longer acronym to a smaller case sensitive one", ->
+    it "prefers longer acronym to a smaller case sensitive one", ->
 
       candidates = [
         'efficient'
@@ -312,7 +323,7 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'itc')).toBe candidates[1]
       expect(bestMatch(candidates, 'ITC')).toBe candidates[1]
 
-    it "allow to select between snake_case and CamelCase using case of query", ->
+    it "allows to select between snake_case and CamelCase using case of query", ->
 
       candidates = [
         'switch.css',
@@ -323,7 +334,7 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'ITC')).toBe candidates[2]
 
 
-    it "prefer CamelCase that happens sooner", ->
+    it "prefers CamelCase that happens sooner", ->
 
       candidates = [
         'anotherCamelCase',
@@ -334,7 +345,7 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'CC')).toBe candidates[1]
       expect(bestMatch(candidates, 'CCs')).toBe candidates[1]
 
-    it "prefer CamelCase in shorter haystack", ->
+    it "prefers CamelCase in shorter haystack", ->
 
       candidates = [
         'CamelCase0',
@@ -343,7 +354,7 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'CC')).toBe candidates[1]
       expect(bestMatch(candidates, 'CCs')).toBe candidates[1]
 
-    it "allow CamelCase to match across words", ->
+    it "allows CamelCase to match across words", ->
 
       candidates = [
         'Gallas',
@@ -351,7 +362,7 @@ describe "filtering", ->
       ]
       expect(bestMatch(candidates, 'gaa')).toBe candidates[1]
 
-    it "allow CamelCase to match even outside of acronym prefix", ->
+    it "allows CamelCase to match even outside of acronym prefix", ->
 
       candidates = [
         'Git Plus: Stash Save',
@@ -364,13 +375,13 @@ describe "filtering", ->
       expect(result[1]).toBe candidates[1]
       expect(result[2]).toBe candidates[0]
 
-      #result = filter(candidates, 'git aa')
-      #expect(result[0]).toBe candidates[2]
-      #expect(result[1]).toBe candidates[1]
-      #expect(result[2]).toBe candidates[0]
+      result = filter(candidates, 'git aa')
+      expect(result[0]).toBe candidates[2]
+      expect(result[1]).toBe candidates[1]
+      expect(result[2]).toBe candidates[0]
 
 
-    it "account for match structure in CamelCase vs Substring matches", ->
+    it "accounts for match structure in CamelCase vs Substring matches", ->
 
       candidates = [
         'Input: Select All',
@@ -397,7 +408,7 @@ describe "filtering", ->
     # it might be possible to handle uppercase playing with case sensitivity instead of structure.
 
 
-    it "account for case in CamelCase vs Substring matches", ->
+    it "accounts for case in CamelCase vs Substring matches", ->
 
       candidates = [
         'CamelCaseClass.js',
@@ -431,6 +442,65 @@ describe "filtering", ->
       ]
       expect(bestMatch(candidates, 'bar')).toBe candidates[1]
       expect(bestMatch(candidates, 'br')).toBe candidates[1]
+      expect(bestMatch(candidates, 'b')).toBe candidates[1]
+
+      candidates = [
+        path.join('foo', 'bar'),
+        'foobar'
+        'FooBar'
+        'foo_bar'
+        'foo bar'
+      ]
+      expect(bestMatch(candidates, 'bar')).toBe candidates[0]
+      expect(bestMatch(candidates, 'br')).toBe candidates[0]
+      expect(bestMatch(candidates, 'b')).toBe candidates[0]
+
+    it "prefers shorter basename", ->
+
+      # here full path is same size, but basename is smaller
+      candidates = [
+        path.join('test', 'core_'),
+        path.join('test', '_core'),
+        path.join('test_', 'core'),
+      ]
+
+      expect(bestMatch(candidates, 'core')).toBe candidates[2]
+
+    it "allows to select using folder name", ->
+
+      candidates = [
+        path.join('model', 'core', 'spec.rb')
+        path.join('model', 'controller.rb')
+      ]
+
+      expect(bestMatch(candidates, 'model core')).toBe candidates[0]
+      expect(bestMatch(candidates, path.join('model', 'core'))).toBe candidates[0]
+
+    it "weighs basename matches higher than folder name", ->
+
+      candidates = [
+        path.join('model', 'core', 'spec.rb')
+        path.join('spec', 'model', 'core.rb')
+      ]
+
+      expect(bestMatch(candidates, 'model core')).toBe candidates[1]
+      expect(bestMatch(candidates, path.join('model', 'core'))).toBe candidates[1]
+
+    it "allows to select using acronym in path", ->
+
+      candidates = [
+        path.join('app', 'controller', 'admin_controller')
+        path.join('app', 'asset', 'javascript_admin')
+      ]
+
+      expect(bestMatch(candidates, 'acadmin')).toBe candidates[0]
+
+      candidates = [
+        path.join('app', 'controller', 'macabre_controller')
+        path.join('app', 'controller', 'articles_controller')
+      ]
+
+      expect(bestMatch(candidates, 'aca')).toBe candidates[1]
 
     it "weighs exact basename matches higher than acronym in path", ->
 
@@ -442,30 +512,7 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'core')).toBe candidates[1]
       expect(bestMatch(candidates, 'foo')).toBe candidates[0]
 
-    it "weighs exact match in the path higher than scattered match in the filename", ->
-
-      candidates = [
-        path.join('model', 'core', 'spec.rb')
-        path.join('model', 'controller.rb')
-      ]
-
-      expect(bestMatch(candidates, 'model core')).toBe candidates[0]
-      expect(bestMatch(candidates, path.join('model', 'core'))).toBe candidates[0]
-
-
-    it "prefer shorter basename", ->
-
-      # here full path is same size, but basename is smaller
-      candidates = [
-        path.join('test', 'core_'),
-        path.join('test', '_core'),
-        path.join('test_', 'core'),
-      ]
-
-      expect(bestMatch(candidates, 'core')).toBe candidates[2]
-
-
-    it "ignore path separator at the end", ->
+    it "ignores trailing slashes", ->
 
       candidates = [
         rootPath('bar', 'foo')
@@ -475,36 +522,27 @@ describe "filtering", ->
       expect(bestMatch(candidates, 'br')).toBe candidates[1]
 
 
-    it "allow candidate with all slashes without error", ->
+    it "allows candidate to be all slashes", ->
       candidates = [path.sep, path.sep + path.sep + path.sep]
-      expect(filter(candidates, 'bar', maxResults: 1)).toEqual []
+      expect(filter(candidates, 'bar')).toEqual []
 
 
   describe "when the Query contains slashes (queryHasSlashes)", ->
 
-    it "weighs end of path matches higher", ->
+    it "weighs end-of-path matches higher", ->
 
       candidates = [
-        rootPath('test', 'filter', 'test.js')
-        rootPath('filter', 'test', 'filter.js')
+        path.join('project', 'folder', 'folder', 'file')
+        path.join('folder', 'folder', 'project', 'file')
       ]
-      expect(bestMatch(candidates, path.join('test', 'filt'))).toBe candidates[1]
 
-      candidates = [
-        rootPath('project', 'folder', 'folder', 'file')
-        rootPath('folder', 'folder', 'project', 'file')
-      ]
-      expect(bestMatch(candidates, path.join('project', 'file'))).toBe candidates[1]
       expect(bestMatch(candidates, 'project file')).toBe candidates[0]
-
-  # normally there's a preference for start of the string on the full-path match
-  # having a separator in the query shift that preference toward the end.
-  # alternative would be to always have preference for end of path - aka compactness
+      expect(bestMatch(candidates, path.join('project', 'file'))).toBe candidates[1]
 
 
   describe "when the entries are of differing directory depths", ->
 
-    it "prefer shallow path", ->
+    it "prefers shallow path", ->
 
       candidate = [
         path.join('b', 'z', 'file'),
@@ -533,7 +571,7 @@ describe "filtering", ->
       # But we have no report of searching too deep, because of that folder-depth penalty is pretty weak.
 
 
-    it "allow better basename match to overcome slightly deeper directory / longer overall path", ->
+    it "allows better basename match to overcome slightly deeper directory / longer overall path", ->
 
       candidates = [
         path.join('f', '1_a_z')
@@ -616,7 +654,7 @@ describe "filtering", ->
 
   describe "when the query contain optional characters (generalize when the entries contains spaces)", ->
 
-    it "allow to match path using either backward slash, forward slash, space or colon", ->
+    it "allows to match path using either backward slash, forward slash, space or colon", ->
 
       candidate = [
         path.join('foo', 'bar'),
@@ -656,7 +694,7 @@ describe "filtering", ->
       ]
       expect(bestMatch(candidates, 'br f')).toBe candidates[1]
 
-    it "allow basename bonus to handle query with folder", ->
+    it "allows basename bonus to handle query with folder", ->
 
       # Without support for optional character, the basename bonus
       # would not be able to find "model" inside "user.rb" so the bonus would be 0
@@ -670,10 +708,9 @@ describe "filtering", ->
       expect(bestMatch(candidate, "modeluser")).toBe candidate[0]
       expect(bestMatch(candidate, path.join("model", "user"))).toBe candidate[0]
 
-
       candidate = [
-        path.join('images', 'destroy_discard.png'),
-        path.join('ressources', 'src', 'app.coffee')
+        path.join('destroy_discard_pool.png'),
+        path.join('resources', 'src', 'app_controller.coffee')
       ]
 
       expect(bestMatch(candidate, "src app")).toBe candidate[1]
@@ -688,7 +725,7 @@ describe "filtering", ->
       expect(bestMatch(candidate, path.join("email", "handlers"))).toBe candidate[1]
 
 
-      # But when basename is an good match, it is still preferred
+    it "allows to select between full query and basename using path.sep", ->
 
       candidate = [
         path.join('models', 'user.rb'),
@@ -696,6 +733,9 @@ describe "filtering", ->
       ]
 
       expect(bestMatch(candidate, "modeluser")).toBe candidate[1]
+      expect(bestMatch(candidate, "model user")).toBe candidate[1]
+      expect(bestMatch(candidate, path.join("model","user"))).toBe candidate[0]
+
 
 
   #---------------------------------------------------
@@ -706,7 +746,7 @@ describe "filtering", ->
 
   describe "When entry are sentence / Natural language", ->
 
-    it "Prefer consecutive characters at the start of word", ->
+    it "prefers consecutive characters at the start of word", ->
 
       candidates = [
         'Find And Replace: Select All',

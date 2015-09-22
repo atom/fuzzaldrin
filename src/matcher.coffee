@@ -72,25 +72,28 @@ exports.mergeMatches = (a, b) ->
 # Follow closely scorer.doScore.
 # Except at each step we record what triggered the best score.
 # Then we trace back to output matched characters.
+#
+# Differences are:
+# - we record values of gap
+# - we break consecutive sequence if we do not take the match.
+# - no hit miss limit
+# - we record the best result in the trace matrix and we finish by a traceback.
 
-exports.match = (subject, query, offset = 0, fuzzyWindow = scorer.defaultSearchWindow) ->
+
+exports.match = (subject, query, offset = 0) ->
 
   m = subject.length
   n = query.length
 
-  #max string size for O(m*n) best match search
-  m = fuzzyWindow if m > fuzzyWindow
-  n = fuzzyWindow if n > fuzzyWindow
-
   subject_lw = subject.toLowerCase()
   query_lw = query.toLowerCase()
 
-  #this is like the consecutive bonus, but for scattered camelCase initials
+  #this is like the consecutive bonus, but for camelCase / snake_case initials
   acro_score = scorer.scoreAcronyms(subject, subject_lw, query, query_lw).score
 
   #Init
-  vRow = new Array(n)
-  cscRow = new Array(n)
+  score_row = new Array(n)
+  csc_row = new Array(n)
 
   vmax = 0
   imax = -1
@@ -109,14 +112,14 @@ exports.match = (subject, query, offset = 0, fuzzyWindow = scorer.defaultSearchW
   #Fill with 0
   j = -1
   while ++j < n
-    vRow[j] = 0
-    cscRow[j] = 0
+    score_row[j] = 0
+    csc_row[j] = 0
 
   i = -1 #0..m-1
   while ++i < m #foreach char si of subject
 
-    v = 0
-    v_diag = 0
+    score = 0
+    score_up = 0
     csc_diag = 0
     si_lw = subject_lw[i]
 
@@ -126,51 +129,46 @@ exports.match = (subject, query, offset = 0, fuzzyWindow = scorer.defaultSearchW
       #reset score
       csc_score = 0
       align = 0
+      score_diag = score_up
 
       #Compute a tentative match
       if ( query_lw[j] == si_lw )
 
+        start = scorer.isWordStart(i, subject, subject_lw)
+
         # Forward search for a sequence of consecutive char
-        csc_score = if csc_diag > 0  then csc_diag else scorer.scoreConsecutives(subject, subject_lw, query, query_lw,
-          i, j)
+        csc_score = if csc_diag > 0  then csc_diag else scorer.scoreConsecutives(subject, subject_lw, query, query_lw, i, j, start)
 
         # Determine bonus for matching A[i] with B[j]
-        align = v_diag + scorer.scoreCharacter(subject, subject_lw, query, i, j, acro_score, csc_score)
+        align = score_diag + scorer.scoreCharacter(i, j, start, acro_score, csc_score)
 
       #Prepare next sequence & match score.
-      v_diag = vRow[j]
-      csc_diag = cscRow[j]
+      score_up = score_row[j] # Current score_up is next run score diag
+      csc_diag = csc_row[j]
 
-      #Compare the score of making a match, a gap in Query (A), or a gap in Subject (B)
-
-      gapA = v_diag
-      gapB = v
-      gap = if(gapA > gapB) then gapA else gapB
-
-      if(align > gap)
-        vRow[j] = v = align
-        cscRow[j] = csc_score
+      #In case of equality, moving UP get us closer to the start of the string.
+      if(score > score_up )
+        move = LEFT
       else
-        vRow[j] = v = gap
-        cscRow[j] = 0 #If we do not use this character reset consecutive sequence.
+        score = score_up
+        move = UP
 
-      # what triggered the best score ?
-      #In case of equality, taking gapA get us closer to the start of the string.
-      pos++ #pos = i * n + j
-      switch v
-        when 0
-          trace[pos] = STOP
-        when gapA
-          trace[pos] = UP
-        when gapB
-          trace[pos] = LEFT
-        when align
-          trace[pos] = DIAGONAL
-          #Record best score
-          if v > vmax
-            vmax = v
-            imax = i
-            jmax = j
+      # In case of equality take the gap
+      if(align > score)
+        score = align
+        move = DIAGONAL
+      else
+        csc_score = 0 #If we do not use this character reset consecutive sequence.
+
+
+      score_row[j] = score
+      csc_row[j] = csc_score
+      trace[++pos] = if(score > 0) then move else STOP
+
+      if score > vmax
+        vmax = score
+        imax = i
+        jmax = j
 
 
   # -------------------

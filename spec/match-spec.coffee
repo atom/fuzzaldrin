@@ -58,7 +58,17 @@ describe "match(string, query)", ->
     expect(match('0xACACAC: CamelControlClass.ccc', 'CCC')).toEqual [ 10, 15, 22]
     expect(match('0xACACAC: CamelControlClass.ccc', 'ccc')).toEqual [ 28, 29, 30]
 
+  it "limit consecutive inside word boundary", ->
 
+    #expect(match('Interns And Roles - Patterns Roles', 'interns roles')).toEqual [ 0, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16]
+    #
+    # the longest substring is "terns roles"
+    # it's also not very intuitive to split the word interns like that.
+    # limit consecutive at word boundary will help to prevent spiting words.
+    #
+    # Aside from doing more computation while scanning consecutive.
+    # The main problem is that we don't reset the consecutive count unless we encounter a negative match.
+    #
 
 
 
