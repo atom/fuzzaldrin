@@ -389,7 +389,6 @@ exports.scoreAcronyms = scoreAcronyms = (subject, subject_lw, query, query_lw) -
 
   i = -1
   j = -1
-  k = m - 1
 
   #foreach char of query
   while ++j < n
@@ -403,14 +402,14 @@ exports.scoreAcronyms = scoreAcronyms = (subject, subject_lw, query, query_lw) -
 
         # subject match.. test if we have an acronym
         # if so, record result & break to next char of query.
-        if  isWordStart(i, subject, subject_lw)
+        if isWordStart(i, subject, subject_lw)
           sameCase++ if ( query[j] == subject[i] )
           pos += i
           count++
           break
 
     #all of subject is consumed, stop processing the query.
-    if i == k then break
+    if i == m then break
 
   #all of query is consumed.
   #a single char is not an acronym (also prevent division by 0)
