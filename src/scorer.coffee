@@ -402,10 +402,10 @@ exports.scoreAcronyms = scoreAcronyms = (subject, subject_lw, query, query_lw) -
       #test if subject match
       # Only record match that are also start-of-word.
       if qj_lw == subject_lw[i] and isWordStart(i, subject, subject_lw)
-          sameCase++ if ( query[j] == subject[i] )
-          pos += i
-          count++
-          break
+        sameCase++ if ( query[j] == subject[i] )
+        pos += i
+        count++
+        break
 
     #all of subject is consumed, stop processing the query.
     if i == m then break
