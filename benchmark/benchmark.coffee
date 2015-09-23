@@ -1,7 +1,7 @@
 fs = require 'fs'
 path = require 'path'
 
-{filter, match} = require '../src/fuzzaldrin'
+{filter, match, prepQuery} = require '../src/fuzzaldrin'
 
 lines = fs.readFileSync(path.join(__dirname, 'data.txt'), 'utf8').trim().split('\n')
 
@@ -89,7 +89,8 @@ console.log("Filtering #{lines.length} entries for 'nodemodules' took #{Date.now
 console.log("======")
 
 startTime = Date.now()
-match(line, 'index') for line in lines
+query = 'index'
+prepared = prepQuery(query)
+match(line, query, prepared) for line in lines
 console.log("Matching #{results.length} results for 'index' took #{Date.now() - startTime}ms")
-
 

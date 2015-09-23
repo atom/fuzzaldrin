@@ -6,16 +6,16 @@ sortCandidates = (a, b) -> b.score - a.score
 PathSeparator = require('path').sep
 
 module.exports = (candidates, query, {key, maxResults, maxInners, allowErrors, legacy }={}) ->
-
   scoredCandidates = []
-  spotLeft = if maxInners? and  maxInners> 0 then maxInners else candidates.length
+  spotLeft = if maxInners? and maxInners > 0 then maxInners else candidates.length
 
   bAllowErrors = !!allowErrors
+  bKey = key?
   prepQuery = scorer.prepQuery(query)
 
   if(not legacy)
     for candidate in candidates
-      string = if key? then candidate[key] else candidate
+      string = if bKey then candidate[key] else candidate
       continue unless string
       score = scorer.score(string, query, prepQuery, bAllowErrors)
       if score > 0

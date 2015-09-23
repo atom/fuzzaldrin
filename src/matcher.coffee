@@ -6,7 +6,7 @@ PathSeparator = require('path').sep
 scorer = require './scorer'
 
 
-exports.basenameMatch = (subject, query) ->
+exports.basenameMatch = (subject, subject_lw, prepQuery) ->
 
   # Skip trailing slashes
   end = subject.length - 1
@@ -19,7 +19,7 @@ exports.basenameMatch = (subject, query) ->
   return [] if (basePos == -1)
 
   # Get the number of folder in query
-  depth = scorer.countDir(query, query.length)
+  depth = prepQuery.depth
 
   # Get that many folder from subject
   while(depth-- > 0)
@@ -27,7 +27,7 @@ exports.basenameMatch = (subject, query) ->
     return [] if (basePos == -1) #consumed whole subject ?
 
   # Get basePath match
-  exports.match(subject[basePos + 1 ... end + 1], query, basePos + 1)
+  exports.match(subject[basePos + 1 ... end + 1], subject_lw[basePos + 1 ... end + 1], prepQuery, basePos + 1)
 
 
 #
@@ -36,7 +36,6 @@ exports.basenameMatch = (subject, query) ->
 #
 
 exports.mergeMatches = (a, b) ->
-
   out = []
   m = a.length
   n = b.length
@@ -80,13 +79,12 @@ exports.mergeMatches = (a, b) ->
 # - we record the best result in the trace matrix and we finish by a traceback.
 
 
-exports.match = (subject, query, offset = 0) ->
+exports.match = (subject, subject_lw, prepQuery, offset = 0) ->
+  query = prepQuery.query
+  query_lw = prepQuery.query_lw
 
   m = subject.length
   n = query.length
-
-  subject_lw = subject.toLowerCase()
-  query_lw = query.toLowerCase()
 
   #this is like the consecutive bonus, but for camelCase / snake_case initials
   acro_score = scorer.scoreAcronyms(subject, subject_lw, query, query_lw).score
@@ -137,7 +135,8 @@ exports.match = (subject, query, offset = 0) ->
         start = scorer.isWordStart(i, subject, subject_lw)
 
         # Forward search for a sequence of consecutive char
-        csc_score = if csc_diag > 0  then csc_diag else scorer.scoreConsecutives(subject, subject_lw, query, query_lw, i, j, start)
+        csc_score = if csc_diag > 0  then csc_diag else scorer.scoreConsecutives(subject, subject_lw, query, query_lw,
+          i, j, start)
 
         # Determine bonus for matching A[i] with B[j]
         align = score_diag + scorer.scoreCharacter(i, j, start, acro_score, csc_score)
@@ -165,18 +164,18 @@ exports.match = (subject, query, offset = 0) ->
       csc_row[j] = csc_score
       trace[++pos] = if(score > 0) then move else STOP
 
-      if score > vmax
-        vmax = score
-        imax = i
-        jmax = j
+  #if score > vmax
+  #  vmax = score
+  #  imax = i
+  #  jmax = j
 
 
   # -------------------
   # Go back in the trace matrix from imax, jmax
   # and collect diagonals
 
-  i = imax
-  j = jmax
+  i = m - 1 #imax
+  j = n - 1 #jmax
   pos = i * n + j
   backtrack = true
   matches = []

@@ -24,7 +24,7 @@ tau_depth = 13 # Directory depth at which the full path influence is halved
 # Help to speed up the processing of deep path and frequent character eg vowels
 # If a spec with frequent repetition fail, increase this.
 # This has a direct influence on worst case scenario benchmark.
-miss_coeff = 1 #Max number missed consecutive hit = miss_coeff*query.length + 5
+miss_coeff = 0.75 #Max number missed consecutive hit = ceil(miss_coeff*query.length) + 5
 
 #
 # Optional chars
@@ -43,11 +43,10 @@ exports.coreChars = coreChars = (query) ->
 # Also manage scoring a path and optional character.
 
 exports.score = (string, query, prepQuery = new Query(query), allowErrors = false) ->
+  return 0 unless allowErrors or isMatch(string, prepQuery.core_lw, prepQuery.core_up)
   string_lw = string.toLowerCase()
-  return 0 unless allowErrors or exports.isMatch(string_lw, prepQuery.core_lw)
   score = doScore(string, string_lw, prepQuery)
   return Math.ceil(basenameScore(string, string_lw, prepQuery, score))
-
 
 
 #
@@ -61,6 +60,7 @@ class Query
     @query_lw = query.toLowerCase()
     @core = coreChars(query)
     @core_lw = @core.toLowerCase()
+    @core_up = @core.toUpperCase()
     @depth = countDir(query, query.length)
 
 
@@ -73,8 +73,8 @@ exports.prepQuery = (query) ->
 # Are all characters of query in subject, in proper order ?
 #
 
-exports.isMatch = isMatch = (subject_lw, query_lw) ->
-  m = subject_lw.length
+exports.isMatch = isMatch = (subject, query_lw, query_up) ->
+  m = subject.length
   n = query_lw.length
 
   if !m or !n or n > m
@@ -87,16 +87,13 @@ exports.isMatch = isMatch = (subject_lw, query_lw) ->
   while ++j < n
 
     qj_lw = query_lw[j]
+    qj_up = query_up[j]
 
-    # continue search in subject from last match
-    # until first positive or until we reach the end.
-    while ++i < m
-      break if subject_lw[i] == qj_lw
+    while( ++i < m)
+      si = subject[i]
+      break if si == qj_lw or si == qj_up
 
-    # if we reach the end of the string then we do not have a match.
-    # unless we are scanning last char of query and we have a match.
-    if i == m then return (j == n - 1 and subject_lw[i - 1] == qj_lw)
-
+    if i == m then return false
 
   return true
 
@@ -144,7 +141,8 @@ doScore = (subject, subject_lw, prepQuery) ->
   csc_row = new Array(n)
   sz = scoreSize(n, m)
 
-  miss_left = miss_budget = miss_coeff*n+5
+  miss_budget = Math.ceil(miss_coeff * n + 5)
+  miss_left = miss_budget
 
   #Fill with 0
   j = -1
@@ -168,6 +166,7 @@ doScore = (subject, subject_lw, prepQuery) ->
     score_diag = 0
     csc_diag = 0
     si_lw = subject_lw[i]
+    record_miss = true
 
     j = -1 #0..n-1
     while ++j < n   #foreach char qj of query
@@ -176,7 +175,7 @@ doScore = (subject, subject_lw, prepQuery) ->
       # score_up contain the score of a gap in subject.
       # score_left = last iteration of score, -> gap in query.
       score_up = score_row[j]
-      if(score_up > score ) then score = score_up
+      score = score_up if(score_up > score )
 
       #Reset consecutive
       csc_score = 0
@@ -195,7 +194,7 @@ doScore = (subject, subject_lw, prepQuery) ->
 
         #Are we better using this match or taking the best gap (currently stored in score)?
         if(align > score)
-          score =  align
+          score = align
           # reset consecutive missed hit count
           miss_left = miss_budget
         else
@@ -203,7 +202,8 @@ doScore = (subject, subject_lw, prepQuery) ->
           # If budget is exhausted exit
           # Each character of query have it's score history stored in score_row
           # To get full query score use last item of row.
-          if(--miss_left <= 0) then return score_row[n - 1] * sz
+          return score_row[n - 1] * sz if(record_miss and --miss_left <= 0)
+          record_miss = false
 
 
       #Prepare next sequence & match score.
@@ -211,7 +211,6 @@ doScore = (subject, subject_lw, prepQuery) ->
       csc_diag = csc_row[j]
       csc_row[j] = csc_score
       score_row[j] = score
-
 
 
   return score * sz
@@ -353,7 +352,7 @@ exports.scoreExactMatch = scoreExactMatch = (subject, subject_lw, query, query_l
   # - Testing 2 instances is somewhere between testing only one and testing every instances.
 
   if not start
-    pos2 = subject_lw.indexOf(query_lw, pos+1)
+    pos2 = subject_lw.indexOf(query_lw, pos + 1)
     if pos2 > -1
       start = isWordStart(pos2, subject, subject_lw)
       pos = pos2 if start
@@ -463,7 +462,6 @@ basenameScore = (subject, subject_lw, prepQuery, fullPathScore) ->
 
   alpha = 0.5 * tau_depth / ( tau_depth + countDir(subject, end + 1) )
   return  alpha * basePathScore + (1 - alpha) * fullPathScore * scoreSize(0, 0.5 * (end - basePos))
-
 
 
 #

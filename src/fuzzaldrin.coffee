@@ -11,18 +11,22 @@ module.exports =
     return [] unless query?.length and candidates?.length
     filter(candidates, query, options)
 
-  #
-  # While the API is backward compatible,
-  # the following pattern is recommended for speed.
-  #
-  # query = ...
-  # prepared = fuzzaldrin.prepQuery(query)
-  # for candidate in candidates
-  #    score = fuzzaldrin.score(candidate, query, prepared)
-  #
+  prepQuery: (query) ->
+    scorer.prepQuery(query)
 
-  score: (string, query, prepQuery = scorer.prepQuery(query), {allowErrors, legacy}={}) ->
+#
+# While the API is backward compatible,
+# the following pattern is recommended for speed.
+#
+# query = ...
+# prepared = fuzzaldrin.prepQuery(query)
+# for candidate in candidates
+#    score = fuzzaldrin.score(candidate, query, prepared)
+#
+
+  score: (string, query, prepQuery, {allowErrors, legacy}={}) ->
     return 0 unless string?.length and query?.length
+    prepQuery ?= scorer.prepQuery(query)
 
     if not legacy
       score = scorer.score(string, query, prepQuery, !!allowErrors)
@@ -35,34 +39,27 @@ module.exports =
 
     score
 
-  prepQuery: (query) ->
-    scorer.prepQuery(query)
-
-  match: (string, query, {allowErrors}={}) ->
-
+  match: (string, query, prepQuery, {allowErrors}={}) ->
     return [] unless string
     return [] unless query
     return [0...string.length] if string is query
+    prepQuery ?= scorer.prepQuery(query)
 
+    return [] unless allowErrors or scorer.isMatch(string, prepQuery.core_lw, prepQuery.core_up)
     string_lw = string.toLowerCase()
-    coreQuery_lw = scorer.coreChars(query).toLowerCase()
-    return [] unless allowErrors or scorer.isMatch(string_lw, coreQuery_lw)
-
-    #get base path ("file.ext" from "folder/file.ext) "
-    pos = query.indexOf(PathSeparator)
-    baseQuery = if pos > -1 then query.substring(pos) else query
+    query_lw = prepQuery.query_lw
 
     # Full path results
-    matches = matcher.match(string, query)
+    matches = matcher.match(string, string_lw, prepQuery)
 
-    #if no matches on the long path. there will not be any on the base path either.
+    #if there is no matches on the full path, there should not be any on the base path either.
     return matches if matches.length == 0
 
     # Is there a base path ?
     if(string.indexOf(PathSeparator) > -1)
 
       # Base path results
-      baseMatches = matcher.basenameMatch(string, baseQuery)
+      baseMatches = matcher.basenameMatch(string, string_lw, prepQuery)
 
       # Combine the results, removing duplicate indexes
       matches = matcher.mergeMatches(matches, baseMatches)
