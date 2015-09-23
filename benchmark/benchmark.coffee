@@ -89,6 +89,17 @@ console.log("Filtering #{lines.length} entries for 'nodemodules' took #{Date.now
 console.log("======")
 
 startTime = Date.now()
+results = filter(lines, 'ndem', forceAllMatch)
+console.log("Filtering #{lines.length} entries for 'ndem' took #{Date.now() - startTime}ms for #{results.length} results (~98% positive + Fuzzy match, [Worst case but shorter srting])")
+
+startTime = Date.now()
+results = filter(lines, 'ndem', legacy)
+console.log("Filtering #{lines.length} entries for 'ndem' took #{Date.now() - startTime}ms for #{results.length} results (Legacy)")
+
+
+console.log("======")
+
+startTime = Date.now()
 query = 'index'
 prepared = prepQuery(query)
 match(line, query, prepared) for line in lines

@@ -89,7 +89,7 @@ exports.isMatch = isMatch = (subject, query_lw, query_up) ->
     qj_lw = query_lw[j]
     qj_up = query_up[j]
 
-    while( ++i < m)
+    while ++i < m
       si = subject[i]
       break if si == qj_lw or si == qj_up
 
@@ -381,7 +381,9 @@ emptyAcronymResult = new AcronymResult(0, 0.1, 0)
 exports.scoreAcronyms = scoreAcronyms = (subject, subject_lw, query, query_lw) ->
   m = subject.length
   n = query.length
-  return emptyAcronymResult unless m and n
+
+  #a single char is not an acronym
+  return emptyAcronymResult unless m > 1 and n > 1
 
   count = 0
   pos = 0
@@ -398,11 +400,8 @@ exports.scoreAcronyms = scoreAcronyms = (subject, subject_lw, query, query_lw) -
     while ++i < m
 
       #test if subject match
-      if(qj_lw == subject_lw[i])
-
-        # subject match.. test if we have an acronym
-        # if so, record result & break to next char of query.
-        if isWordStart(i, subject, subject_lw)
+      # Only record match that are also start-of-word.
+      if qj_lw == subject_lw[i] and isWordStart(i, subject, subject_lw)
           sameCase++ if ( query[j] == subject[i] )
           pos += i
           count++
