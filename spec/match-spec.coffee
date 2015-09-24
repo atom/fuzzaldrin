@@ -2,6 +2,7 @@
 path = require 'path'
 
 describe "match(string, query)", ->
+
   it "returns an array of matched and unmatched strings", ->
     expect(match('Hello World', 'he')).toEqual [0, 1]
     expect(match()).toEqual []
@@ -25,3 +26,50 @@ describe "match(string, query)", ->
   it "double matches characters in the path and the base", ->
     expect(match(path.join('XY', 'XY'), 'XY')).toEqual [0, 1, 3, 4]
     expect(match(path.join('--X-Y-', '-X--Y'), 'XY')).toEqual [2, 4, 8, 11]
+
+  it "prefer whole word to scattered letters", ->
+    expect(match('fiddle gruntfile filler', 'file')).toEqual [ 12, 13, 14,15]
+    expect(match('fiddle file', 'file')).toEqual [ 7, 8, 9, 10]
+    expect(match('find le file', 'file')).toEqual [ 8, 9, 10, 11]
+
+  it "prefer whole word to scattered letters, even without exact matches", ->
+    expect(match('fiddle gruntfile xfiller', 'filex')).toEqual [ 12, 13, 14,15, 17]
+    expect(match('fiddle file xfiller', 'filex')).toEqual [ 7, 8, 9, 10, 12]
+    expect(match('find le file xfiller', 'filex')).toEqual [ 8, 9, 10, 11, 13]
+
+  it "prefer exact match", ->
+    expect(match('filter gruntfile filler', 'file')).toEqual [ 12, 13, 14, 15]
+
+  it "prefer case sensitive exact match", ->
+    expect(match('ccc CCC cCc CcC CCc', 'ccc')).toEqual [ 0, 1, 2]
+    expect(match('ccc CCC cCc CcC CCc', 'CCC')).toEqual [ 4, 5, 6]
+    expect(match('ccc CCC cCc CcC CCc', 'cCc')).toEqual [ 8, 9, 10]
+    expect(match('ccc CCC cCc CcC CCc', 'CcC')).toEqual [ 12, 13, 14]
+    expect(match('ccc CCC cCc CcC CCc', 'CCc')).toEqual [ 16, 17, 18]
+
+  it "prefer camelCase to scattered letters", ->
+    expect(match('ImportanceTableCtrl', 'itc')).toEqual [0,10,15]
+
+  it "prefer acronym to scattered letters", ->
+    expect(match('action_config', 'acon')).toEqual [ 0, 7, 8, 9]
+    expect(match('application_control', 'acon')).toEqual [ 0, 12, 13, 14]
+
+  it "account for case in selecting camelCase vs consecutive", ->
+    expect(match('0xACACAC: CamelControlClass.ccc', 'CCC')).toEqual [ 10, 15, 22]
+    expect(match('0xACACAC: CamelControlClass.ccc', 'ccc')).toEqual [ 28, 29, 30]
+
+  it "limit consecutive inside word boundary", ->
+
+    #expect(match('Interns And Roles - Patterns Roles', 'interns roles')).toEqual [ 0, 1, 2, 3, 4, 5, 6, 7, 12, 13, 14, 15, 16]
+    #
+    # the longest substring is "terns roles"
+    # it's also not very intuitive to split the word interns like that.
+    # limit consecutive at word boundary will help to prevent spiting words.
+    #
+    # Aside from doing more computation while scanning consecutive.
+    # The main problem is that we don't reset the consecutive count unless we encounter a negative match.
+    #
+
+
+
+
