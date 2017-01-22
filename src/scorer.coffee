@@ -43,12 +43,28 @@ exports.basenameScore = (string, query, score) ->
   score
 
 exports.score = (string, query) ->
-  return 1 if string is query
+  return 2 if string is query
 
   # Return a perfect score if the file name itself matches the query.
-  return 1 if queryIsLastPathSegment(string, query)
+  return 2 if queryIsLastPathSegment(string, query)
+
+  bonus = 0
+  substringIndex = string.indexOf(query)
+  if substringIndex > -1
+    if substringIndex == 0 or string[substringIndex - 1] is PathSeparator
+      bonus = 1.9
+    else
+      bonus = 1
+  else
+    substringIndexi = string.toUpperCase().indexOf(query.toUpperCase())
+    if substringIndexi > -1
+      if substringIndexi == 0 or string[substringIndexi - 1] is PathSeparator
+        bonus = 1.6
+      else
+        bonus = 0.7
 
   totalCharacterScore = 0
+
   queryLength = query.length
   stringLength = string.length
 
@@ -82,7 +98,7 @@ exports.score = (string, query) ->
     totalCharacterScore += characterScore
 
   queryScore = totalCharacterScore / queryLength
-  ((queryScore * (queryLength / stringLength)) + queryScore) / 2
+  ((queryScore * (queryLength / stringLength)) + queryScore + bonus) / 2
 
 queryIsLastPathSegment = (string, query) ->
   if string[string.length - query.length - 1] is PathSeparator
