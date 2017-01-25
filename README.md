@@ -25,6 +25,7 @@ Sort and filter the given candidates by matching them against the given query.
 * `query` - A string query to match each candidate against.
 * `options` - An optional object with the following keys:
   * `key` - The property to use for scoring if the candidates are objects.
+  * `keys` - Array of properties to use for scoring if the candidates are objects.
   * `maxResults` - The maximum numbers of results to return.
 
 Returns an array of candidates sorted by best match against the query.

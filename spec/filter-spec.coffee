@@ -137,3 +137,29 @@ describe "filtering", ->
         path.join('spec', 'cars.rb')
       ]
       expect(bestMatch(candidates, 'car.rb')).toBe candidates[0]
+
+  describe "when entries are objects", ->
+    it "matches a single key", ->
+      candidates = [
+        { name: 'truck', lang: 'ruby', ext: '.rb' }
+        { name: 'ruby car', lang: 'ruby', ext: '.rb' }
+        { name: 'foo', lang: 'php', ext: '.php' }
+      ]
+      expectedCandidates = candidates.slice(0, 2)
+      results = filter(candidates, 'ruby', keys: ['lang'])
+      expectedResults = filter(candidates, 'ruby', key: 'lang')
+      expect(results.length).toBe 2
+      expect(results).toEqual expectedCandidates
+      expect(results).toEqual expectedResults
+
+    it "matches multiple keys", ->
+      candidates = [
+        { name: 'truck', lang: 'ruby', ext: '.rb' }
+        { name: 'ruby car', lang: 'ruby', ext: '.rb' }
+        { name: 'foo', lang: 'php', ext: '.php' }
+      ]
+      expectedCandidates = candidates.slice(0, 2)
+      results = filter(candidates, 'ruby', keys: ['name', 'lang'])
+      expect(results.length).toBe 2
+      expect(results[0]).toBe expectedCandidates[1]
+      expect(results[1]).toBe expectedCandidates[0]
