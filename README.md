@@ -43,7 +43,7 @@ candidates = [
   {name: 'Me', id: 2}
   {name: 'Maybe', id: 3}
 ]
-results = filter(candidates, 'me', key: 'name')
+results = filter(candidates, 'me', {key: 'name'})
 console.log(results) # [{name: 'Me', id: 2}, {name: 'Maybe', id: 3}]
 ```
 
